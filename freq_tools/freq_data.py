@@ -45,14 +45,13 @@ class FreqData():
                 )
             )
         ax.set_xlabel('time t (s)')
-        ax.set_ylabel('frequency deviation (Hz))
+        ax.set_ylabel('frequency deviation (Hz)')
         ax.legend()
         plt.grid(b='on', which = 'minor', axis = 'both')
         plt.box(on='on')
         return fig, ax
     
     def plot_asd(self, fig_ax=None):
-        if not 
         fig, ax = plt.subplots()
         asd = self.asd()
         ax.loglog(asd[0], asd[1])

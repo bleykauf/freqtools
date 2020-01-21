@@ -54,8 +54,8 @@ class FreqData():
         fig, ax = plt.subplots()
         asd = self.asd()
         ax.loglog(asd[0], asd[1])
-        ax.set_xlabel('Time / s')
-        ax.set_ylabel('Frequency / Hz')
+        ax.set_xlabel('Frequency / Hz')
+        ax.set_ylabel(r'Frequency noise ASD  / $Hz/\sqrt{Hz}$')
         plt.grid(True, which = 'both', ls = '-')
         return fig, ax
 

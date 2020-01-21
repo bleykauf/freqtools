@@ -44,18 +44,20 @@ class FreqData():
                 np.std(self.frequencies)*1e-6
                 )
             )
-        ax.set_xlabel('Averaging time t (s)')
-        ax.set_ylabel(r'Allan deviation $\sigma_y(t)$')
+        ax.set_xlabel('time t (s)')
+        ax.set_ylabel('frequency deviation (Hz))
+        ax.legend()
         plt.grid(b='on', which = 'minor', axis = 'both')
         plt.box(on='on')
         return fig, ax
     
-    def plot_asd(self):
+    def plot_asd(self, fig_ax=None):
+        if not 
         fig, ax = plt.subplots()
         asd = self.asd()
         ax.loglog(asd[0], asd[1])
-        ax.set_xlabel('Time / s')
-        ax.set_ylabel('Frequency / Hz')
+        ax.set_xlabel('Frequency / Hz')
+        ax.set_ylabel(r'Frequency noise ASD  / $Hz/\sqrt{Hz}$')
         plt.grid(True, which = 'both', ls = '-')
         return fig, ax
 

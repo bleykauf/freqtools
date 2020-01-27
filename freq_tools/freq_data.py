@@ -6,12 +6,11 @@ import allantools
 class FreqData():
     def __init__(self, frequencies, duration, divide_by=1):
         self.divide_by = divide_by
-        mean_frequency = np.mean(frequencies)
-        self.freqs = frequencies - mean_frequency
-        self.mean_frequency = mean_frequency * self.divide_by
+        self.freqs = frequencies
+        self.mean_frequency = np.mean(self.freqs)
         self.duration = duration
         self.n_samples = len(self.freqs)
-        self.sample_rate = int(self.n_samples/duration)
+        self.sample_rate = int(self.n_samples/self.duration)
 
     def data_to_dict(self):
         data_dict = {
@@ -41,7 +40,7 @@ class FreqData():
         t = np.linspace(0,self.duration,num=self.n_samples)
         fig, ax = plt.subplots()
         ax.plot(t, self.freqs, 
-            label = 'Mean frequency: ({}+/-{}) MHz'.format(
+            label = 'Mean frequency: ({:3f}+/-{:3f}) MHz'.format(
                 self.mean_frequency*1e-6,
                 np.std(self.freqs)*1e-6
                 )

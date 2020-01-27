@@ -4,13 +4,14 @@ import matplotlib.pyplot as plt
 import allantools
 
 class FreqData():
-    def __init__(self, frequencies, duration, divide_by):
-        self.mean_frequency = np.mean(frequencies)
-        self.freqs = frequencies - self.mean_frequency
+    def __init__(self, frequencies, duration, divide_by=1):
+        self.divide_by = divide_by
+        mean_frequency = np.mean(frequencies)
+        self.freqs = frequencies - mean_frequency
+        self.mean_frequency = mean_frequency * self.divide_by
         self.duration = duration
         self.n_samples = len(self.freqs)
         self.sample_rate = int(self.n_samples/duration)
-        self.divide_by = divide_by
 
     def data_to_dict(self):
         data_dict = {
@@ -25,8 +26,8 @@ class FreqData():
     def asd(self):
         f, Pxx = welch(self.freqs, self.sample_rate, ('kaiser', 100), 
             nperseg=1024, scaling='density')
-        return SpectralDensity(f, np.sqrt(Pxx), 
-            scaling='asd', base='freq')
+        asd = self.divide_by * np.sqrt(Pxx)
+        return SpectralDensity(f, asd, scaling='asd', base='freq')
 
     def adev(self, scaling=780e-9/2.99e8):
         freqs = np.array(self.freqs)*scaling
@@ -69,13 +70,13 @@ class SpectralDensity():
 
     def __init__(self, freqs, density, scaling='asd', base='freq'):
         
-        self.scaling = scaling
-        self.base = base
+        self._scaling = scaling
+        self._base = base
         self.freqs = freqs
 
         # only one representation of the spectral density is set, the rest is
         # calculated when needed
-        attr = '{}_{}'.format(scaling, base)
+        attr = '{}_{}'.format(self.scaling, self.base)
         setattr(self, '_'+attr, density)
         self._alias_density()
 
@@ -91,6 +92,7 @@ class SpectralDensity():
     def base(self, base):
         assert base in ['freq', 'phase']
         self._base = base
+        self._alias_density()
 
     @property
     def scaling(self):
@@ -99,6 +101,7 @@ class SpectralDensity():
     def scaling(self, scaling):
         assert scaling in ['asd', 'psd']
         self._scaling = scaling
+        self._alias_density()
 
     @property
     def asd_freq(self):
@@ -125,9 +128,16 @@ class SpectralDensity():
         return self._psd_phase
 
     def plot(self):
+        label_dict = {'asd_freq'  : 'ASD (Hz / $\sqrt{\mathrm{Hz}}$)',
+                      'asd_phase' : 'ASD ($\mathrm{rad} / \sqrt{\mathrm{Hz}}$)',
+                      'psd_freq'  : 'PSD (Hz${}^2$ / Hz)',
+                      'psd_phase' : 'PSD (rad${}^2$ / Hz)'}
+        attr = '{}_{}'.format(self.scaling, self.base)
+        label = label_dict[attr]
+
         fig, ax = plt.subplots()
         ax.loglog(self.freqs, self.density)
-        ax.set_xlabel('Time / s')
-        ax.set_ylabel('Frequency / Hz')
+        ax.set_xlabel('Frequency / Hz')
+        ax.set_ylabel(label)
         plt.grid(True, which = 'both', ls = '-')
         return fig, ax

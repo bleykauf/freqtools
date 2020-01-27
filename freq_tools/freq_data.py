@@ -128,8 +128,8 @@ class SpectralDensity():
         return self._psd_phase
 
     def plot(self):
-        label_dict = {'asd_freq'  : 'ASD (Hz / $\sqrt{\mathrm{Hz}}$)',
-                      'asd_phase' : 'ASD ($\mathrm{rad} / \sqrt{\mathrm{Hz}}$)',
+        label_dict = {'asd_freq'  : 'ASD (Hz / $\\sqrt{\\mathrm{Hz}}$)',
+                      'asd_phase' : 'ASD ($\\mathrm{rad} / \\sqrt{\\mathrm{Hz}}$)',
                       'psd_freq'  : 'PSD (Hz${}^2$ / Hz)',
                       'psd_phase' : 'PSD (rad${}^2$ / Hz)'}
         attr = '{}_{}'.format(self.scaling, self.base)
@@ -141,3 +141,13 @@ class SpectralDensity():
         ax.set_ylabel(label)
         plt.grid(True, which = 'both', ls = '-')
         return fig, ax
+
+def merge(sds):
+       
+    freqs = np.concatenate([sd.freqs for sd in sds])
+    # FIXME: test if scaling and base is equal for all SpectralDensities
+    density = np.concatenate([sd.density for sd in sds])
+    freqs, idx = np.unique(freqs, return_index=True)
+    density = density[idx]
+    return SpectralDensity(freqs, density, 
+        scaling=sds[0].scaling, base=sds[0].base)

@@ -1,1 +1,1 @@
-from .freq_data import FreqData, SpectralDensity
+from .freq_data import FreqData, SpectralDensity, merge

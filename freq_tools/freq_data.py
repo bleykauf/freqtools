@@ -18,7 +18,8 @@ class FreqData():
             'duration' : self.duration,
             'n_samples' : self.n_samples,
             'sample_rate' : self.sample_rate,
-            'frequencies' : self.freqs
+            'frequencies' : self.freqs,
+            'divide_by' : self.divide_by
         }
         return data_dict
 
@@ -83,6 +84,9 @@ class SpectralDensity():
         # aliasing based on scaling and base
         attr = '{}_{}'.format(self.scaling, self.base)
         self.density = getattr(self, attr)
+
+
+
 
     @property
     def base(self):

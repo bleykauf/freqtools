@@ -4,12 +4,13 @@ import matplotlib.pyplot as plt
 import allantools
 
 class FreqData():
-    def __init__(self, frequencies, duration, label='testing'):
+    def __init__(self, frequencies, duration, divide_by):
         self.mean_frequency = np.mean(frequencies)
-        self.frequencies = frequencies - self.mean_frequency
+        self.freqs = frequencies - self.mean_frequency
         self.duration = duration
-        self.n_samples = len(self.frequencies)
+        self.n_samples = len(self.freqs)
         self.sample_rate = int(self.n_samples/duration)
+        self.divide_by = divide_by
 
     def data_to_dict(self):
         data_dict = {
@@ -17,19 +18,19 @@ class FreqData():
             'duration' : self.duration,
             'n_samples' : self.n_samples,
             'sample_rate' : self.sample_rate,
-            'frequencies' : self.frequencies
+            'frequencies' : self.freqs
         }
         return data_dict
 
     def asd(self):
-        # only calculate asd once
-        f, Pxx = welch(self.frequencies, self.sample_rate, ('kaiser', 100),
+        f, Pxx = welch(self.freqs, self.sample_rate, ('kaiser', 100), 
             nperseg=1024, scaling='density')
-        return (f, np.sqrt(Pxx))
+        return SpectralDensity(f, np.sqrt(Pxx), 
+            scaling='asd', base='freq')
 
     def adev(self, scaling=780e-9/2.99e8):
-        freqs = np.array(self.frequencies)*scaling
-        tau_max = np.log10(len(self.frequencies))
+        freqs = np.array(self.freqs)*scaling
+        tau_max = np.log10(len(self.freqs))
         taus = np.logspace(0,tau_max)/self.sample_rate
         (taus, adev, adeverror, _) = allantools.adev(freqs, data_type='freq',
              rate=self.sample_rate, taus=taus)
@@ -38,10 +39,10 @@ class FreqData():
     def plot_time_record(self):
         t = np.linspace(0,self.duration,num=self.n_samples)
         fig, ax = plt.subplots()
-        ax.plot(t, self.frequencies, 
+        ax.plot(t, self.freqs, 
             label = 'Mean frequency: ({}+/-{}) MHz'.format(
                 self.mean_frequency*1e-6,
-                np.std(self.frequencies)*1e-6
+                np.std(self.freqs)*1e-6
                 )
             )
         ax.set_xlabel('Averaging time t (s)')
@@ -50,15 +51,6 @@ class FreqData():
         plt.box(on='on')
         return fig, ax
     
-    def plot_asd(self):
-        fig, ax = plt.subplots()
-        asd = self.asd()
-        ax.loglog(asd[0], asd[1])
-        ax.set_xlabel('Time / s')
-        ax.set_ylabel('Frequency / Hz')
-        plt.grid(True, which = 'both', ls = '-')
-        return fig, ax
-
     def plot_adev(self):
         taus, adev, adeverror = self.adev()
         fig, ax = plt.subplots()
@@ -72,5 +64,69 @@ class FreqData():
         return fig, ax
 
 
-    
+class SpectralDensity():
 
+    def __init__(self, freqs, density, scaling='asd', base='freq'):
+        
+        self.scaling = scaling
+        self.base = base
+        self.freqs = freqs
+
+        # only one representation of the spectral density is set, the rest is
+        # calculated when needed
+        attr = '{}_{}'.format(scaling, base)
+        setattr(self, '_'+attr, density)
+        self._alias_density()
+
+    def _alias_density(self):
+        # aliasing based on scaling and base
+        attr = '{}_{}'.format(self.scaling, self.base)
+        self.density = getattr(self, attr)
+
+    @property
+    def base(self):
+        return self._base
+    @base.setter
+    def base(self, base):
+        assert base in ['freq', 'phase']
+        self._base = base
+
+    @property
+    def scaling(self):
+        return self._scaling
+    @scaling.setter
+    def scaling(self, scaling):
+        assert scaling in ['asd', 'psd']
+        self._scaling = scaling
+
+    @property
+    def asd_freq(self):
+        if not hasattr(self, '_asd_freq'):
+            self._asd_freq = 2 * np.pi * f * self._asd_phase
+        return self._asd_freq
+
+    @property
+    def asd_phase(self):
+        if not hasattr(self, '_asd_phase'):
+            self._asd_phase = np.sqrt(self.psd_phase)
+        return self._asd_phase
+
+    @property
+    def psd_freq(self):
+        if not hasattr(self, '_psd_freq'):
+            self._psd_freq = self.asd_freq**2 
+        return self._psd_freq            
+
+    @property
+    def psd_phase(self):
+        if not hasattr(self, '_psd_phase'):
+            self._psd_phase = self.psd_freq / (4 *  np.pi**2 * self.freqs**2)
+        return self._psd_phase
+
+    def plot(self):
+        fig, ax = plt.subplots()
+        ax.loglog(self.freqs, self.density)
+        ax.set_xlabel('Time / s')
+        ax.set_ylabel('Frequency / Hz')
+        plt.grid(True, which = 'both', ls = '-')
+        return fig, ax

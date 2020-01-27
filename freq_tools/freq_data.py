@@ -45,12 +45,13 @@ class FreqData():
                 np.std(self.freqs)*1e-6
                 )
             )
-        ax.set_xlabel('Averaging time t (s)')
-        ax.set_ylabel(r'Allan deviation $\sigma_y(t)$')
+        ax.set_xlabel('time t (s)')
+        ax.set_ylabel('frequency deviation (Hz)')
+        ax.legend()
         plt.grid(b='on', which = 'minor', axis = 'both')
         plt.box(on='on')
         return fig, ax
-    
+
     def plot_adev(self):
         taus, adev, adeverror = self.adev()
         fig, ax = plt.subplots()

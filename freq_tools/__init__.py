@@ -1,1 +1,1 @@
-from freq_tools import FreqData, SpectralDensity
+from .freq_data import FreqData, SpectralDensity

@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import allantools
 
-class FreqData():
+class CounterData():
     def __init__(self, frequencies, duration, divide_by=1):
         self.divide_by = divide_by
         self.freqs = frequencies
@@ -145,7 +145,7 @@ class SpectralDensity():
         return fig, ax
 
 def merge(sds):
-       
+    # merging instances of SpectralDensity   
     freqs = np.concatenate([sd.freqs for sd in sds])
     # FIXME: test if scaling and base is equal for all SpectralDensities
     density = np.concatenate([sd.density for sd in sds])

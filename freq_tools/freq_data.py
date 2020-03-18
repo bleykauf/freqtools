@@ -23,10 +23,11 @@ class CounterData():
         }
         return data_dict
 
-    def asd(self):
-        f, Pxx = welch(self.freqs, self.sample_rate, ('kaiser', 100), 
-            nperseg=1024, scaling='density')
-        asd = self.divide_by * np.sqrt(Pxx)
+    def asd(self, method='welch'):
+        if method == 'welch':
+            f, Pxx = welch(self.freqs, self.sample_rate, ('kaiser', 100), 
+                nperseg=1024, scaling='density')
+            asd = self.divide_by * np.sqrt(Pxx)
         return SpectralDensity(f, asd, scaling='asd', base='freq')
 
     def adev(self, scaling=780e-9/2.99e8):
@@ -64,7 +65,6 @@ class CounterData():
         plt.grid(b='on', which = 'minor', axis = 'both')
         plt.box(on='on')
         return fig, ax
-
 
 class SpectralDensity():
 

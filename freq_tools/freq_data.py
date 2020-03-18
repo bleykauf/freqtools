@@ -85,9 +85,6 @@ class SpectralDensity():
         attr = '{}_{}'.format(self.scaling, self.base)
         self.density = getattr(self, attr)
 
-
-
-
     @property
     def base(self):
         return self._base
@@ -95,6 +92,7 @@ class SpectralDensity():
     def base(self, base):
         assert base in ['freq', 'phase']
         self._base = base
+        # change what self.density returns
         self._alias_density()
 
     @property
@@ -104,12 +102,13 @@ class SpectralDensity():
     def scaling(self, scaling):
         assert scaling in ['asd', 'psd']
         self._scaling = scaling
+        # change what self.density returns
         self._alias_density()
 
     @property
     def asd_freq(self):
         if not hasattr(self, '_asd_freq'):
-            self._asd_freq = 2 * np.pi * f * self._asd_phase
+            self._asd_freq = self.freqs * self._asd_phase
         return self._asd_freq
 
     @property
@@ -127,7 +126,7 @@ class SpectralDensity():
     @property
     def psd_phase(self):
         if not hasattr(self, '_psd_phase'):
-            self._psd_phase = self.psd_freq / (4 *  np.pi**2 * self.freqs**2)
+            self._psd_phase = self.psd_freq / self.freqs**2
         return self._psd_phase
 
     def plot(self):

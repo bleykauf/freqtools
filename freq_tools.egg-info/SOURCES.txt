@@ -1,9 +1,0 @@
-README.md
-setup.py
-freq_tools/__init__.py
-freq_tools/freq_data.py
-freq_tools.egg-info/PKG-INFO
-freq_tools.egg-info/SOURCES.txt
-freq_tools.egg-info/dependency_links.txt
-freq_tools.egg-info/requires.txt
-freq_tools.egg-info/top_level.txt

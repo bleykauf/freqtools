@@ -2,6 +2,7 @@ from scipy.signal import welch
 import numpy as np
 import matplotlib.pyplot as plt
 import allantools
+from .phase_noise import PhaseNoise
 
 class CounterData():
     """
@@ -27,13 +28,9 @@ class CounterData():
         duration of the counter meausurement in s
     n_samples : int
         number of measurements
-    sample_rate : in Hz
+    sample_rate : float
         sampling rate in Hz
-    asd
-    adev
-    plot_time_record
-    plot_adev
-    data_to_dict
+    divide_by : int
     """
     def __init__(self, freqs, duration, divide_by=1):
         self.divide_by = divide_by
@@ -62,11 +59,16 @@ class CounterData():
             f, Pxx = welch(self.freqs, self.sample_rate, ('kaiser', 100), 
                 nperseg=1024, scaling='density')
             asd = self.divide_by * np.sqrt(Pxx)
-        return SpectralDensity(f, asd, scaling='asd', base='freq')
+        return SpectralDensity(f, asd, scaling='asd', base='freq', two_sided=True)
 
     def adev(self, scaling=780e-9/2.99e8):
         """
         Calculates the Allan deviation of the data.
+
+        Parameters
+        ----------
+        scaling : float (optional)
+            default scaling for the adev is the frequency of the rubidium D2 line
 
         Returns
         -------
@@ -81,7 +83,7 @@ class CounterData():
              rate=self.sample_rate, taus=taus)
         return taus, adev, adeverror
 
-    def plot_time_record(self, fig=None, ax=Non):
+    def plot_time_record(self, fig=None, ax=None):
         """
         Plots the time record of the data.
 
@@ -154,7 +156,7 @@ class CounterData():
 class SpectralDensity():
     """
     A class to make it easy to convert between ASD(f) and PSD(f) of both phase and frequency. If
-     either of these densities is provided, all other representations can be calculated.
+     either of these densities is provided, all other representations can be calculated. 
 
     Parameters
     ----------
@@ -162,9 +164,12 @@ class SpectralDensity():
         the Fourier frequencies in Hz
     density : list_like
         PSD(f), ASD(f) with respect to frequency or phase, depending on `scaling` and `base`. The
-        units are assumed to be without prefixes, i.e. Hz**2/Hz for the PSD(f) of the frequency
+        units are assumed to be without prefixes, i.e. Hz**2/Hz for the PSD(f) of the frequency. 
     scaling : {'asd', 'psd'}, default 'asd'
     base : {'freq', 'phase'}, default 'freq'
+    two_sided : bool (default True)
+        Specifies whether the two_sided spectral densities are used. If set to False, one-sided 
+        spectral densities are assumed.
 
     Attributes
     ----------
@@ -175,12 +180,12 @@ class SpectralDensity():
     asd_freq, asd_phase, psd_freq, psd_phase : 1darray
         the spectral density in differenct representations. `density` maps to on of these 
         properties
-    plot
     """
-    def __init__(self, freqs, density, scaling='asd', base='freq'):
+    def __init__(self, freqs, density, scaling='asd', base='freq', two_sided=True):
         self._scaling = scaling
         self._base = base
         self.freqs = np.array(freqs)
+        self.two_sided = two_sided
 
         # only one representation of the spectral density is set, the rest is calculated when 
         # needed
@@ -238,6 +243,30 @@ class SpectralDensity():
             self._psd_phase = self.psd_freq / self.freqs**2
         return self._psd_phase
 
+    def to_phase_noise(self, label=''):
+        """
+        Converts the PSD of the phase, S_phi(f), to phase_noise L(f). Depending on whether the
+        densities are one- or two-sided, the scaling will be adjusted [1].
+
+        Parameters
+        ----------
+        label : str (optional)
+            Optionally pass a label to the PhaseNoise constructor
+
+        References
+        ----------
+        [1] IEEE Standard Definitions of Physical Quantities for Fundamental Frequency and Time 
+        Metrology — Random Instabilities (IEEE Std 1139™-2008)
+        """
+        # see Table A.1 in [1] for the conversion from S_phi(f) and L(f)
+        if self.two_sided:
+            L = self.psd_phase 
+        else:
+            L = self.psd_phase / 2
+        # convert to dBc/Hz
+            L = 10 * np.log10(L)
+        return PhaseNoise(self.freqs, L, label=label)
+
     def plot(self, fig=None, ax=None):
         """
         Plots the spectral density in the representation determiend by `base` and `scaling`
@@ -269,11 +298,23 @@ class SpectralDensity():
         return fig, ax
 
 def merge(sds):
-    # merging instances of SpectralDensity   
+    """
+    Merges two SpectralDensity instances, e.g. from two different counter measurements with 
+    difference sample rates. For each Fourier frequency, only the density value of the 
+    SpectralDensity that first appears in `sds` is used.
+
+    Parameters
+    sds : list of SpectralDensity
+    
+    Returns
+    -------
+    sd : SpectralDensity
+    """  
     freqs = np.concatenate([sd.freqs for sd in sds])
     # FIXME: test if scaling and base is equal for all SpectralDensities
     density = np.concatenate([sd.density for sd in sds])
     freqs, idx = np.unique(freqs, return_index=True)
+    # use the density of the SpectralDensity that first appears in `sds`
     density = density[idx]
     return SpectralDensity(freqs, density, 
         scaling=sds[0].scaling, base=sds[0].base)

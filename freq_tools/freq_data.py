@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 import allantools
 from .phase_noise import PhaseNoise
 
+def import_spectrum_analyzer_data(filename, rbw, divide_by=1, delimiter=',', label=''):
+    data = np.genfromtxt(filename, dtype=float , delimiter='\t', comments='%', names=['freqs','level'])
+    spectrum_analyzer_data = SpectrumAnalyzerData(data['level'], data['freqs'], rbw=rbw, label=label)
+    return spectrum_analyzer_data
+
 class CounterData():
     """
     Counter data, i.e. a time series of frequency data.
@@ -153,6 +158,105 @@ class CounterData():
         }
         return data_dict
 
+
+class SpectrumAnalyzerData():
+    """
+    Class holding data from a spectrum analyzer.
+
+    Parameters
+    ----------
+    level : list_like
+        the level at `freqs` in dBm
+    freqs : list_like
+        frequencies (x axis) of the signal alayzer in Hz
+    rbw : float
+        resolution bandwidth in Hz
+        label : str (optional)
+            Optional label used for some plots and passed
+    Attributes
+    ----------
+    freqs : 1darray
+        frequencies in Hz
+    level : 1darray
+        signal level in dBm. it is the level of the measured signal, i.e. the divided signal if a 
+        prescaler was used, c.p. `divide_by`
+    rbw : 1darray
+        resolution bandwidth in Hz
+    divide_by : int
+        divide-by value if a prescaler was used
+    label : str
+        optional label used for some plots
+    """
+
+    def __init__(self, level, freqs, rbw, divide_by=1, label=''):
+        self.freqs = np.array(freqs)
+        self.divide_by = divide_by
+        self.level = np.array(level) + 20*np.log10(self.divide_by)
+        self.rbw = rbw
+        self.label = label
+
+    def to_phase_noise(self, sideband='right', label=''):
+        """
+        Finds the peak and calculate the 
+        Converts the PSD of the phase, S_phi(f), to phase_noise L(f). Depending on whether the
+        densities are one- or two-sided, the scaling will be adjusted [1].
+
+        Parameters
+        ----------
+        label : str (optional)
+            Optionally pass a label to the PhaseNoise constructor
+
+        Returns
+        -------
+        phase_phase : PhaseNoise
+        """
+        # see Table A.1 in [1] for the conversion from S_phi(f) and L(f)
+        if label == '':
+            label = self.label
+
+        peak_level = max(self.level)
+
+        center_freq =self.freqs[self.level == peak_level]
+
+        if sideband == 'left':
+            selected_freqs = self.freqs < center_freq
+        elif sideband == 'right':
+            selected_freqs = self.freqs > center_freq
+
+        freqs = self.freqs[selected_freqs] - center_freq
+        level = self.level[selected_freqs]
+
+        # convert from dBm to dBc / Hz, no factor 1/2 because we analyse the single-sideband or 
+        # two-sided spectral density
+        noise = (level - peak_level) - 10 * np.log10(self.rbw)
+
+        # divide_by already processed in __init__
+        phase_noise = PhaseNoise(freqs, noise, label=self.label, divide_by=1)
+        return phase_noise
+
+    def plot(self, fig=None, ax=None):
+        """
+        Plots the spectrum.
+        
+        Parameters
+        ----------
+        fig, ax : Figure, Axis (optional)
+            If a figure AND axis are provided, they will be used for the plot. if not provided, a
+            new plot will automatically be created.
+
+        Returns
+        -------
+        fig, ax : Figure and Axis
+            The Figure and Axis handles of the plot that was used.
+        """
+        if not fig:
+            fig, ax = plt.subplots()
+        ax.plot(self.freqs, self.level)
+        ax.set_xlabel('frequency / Hz')
+        ax.set_ylabel('level / dBm')
+        return fig, ax
+
+
 class SpectralDensity():
     """
     A class to make it easy to convert between ASD(f) and PSD(f) of both phase and frequency. If
@@ -253,10 +357,14 @@ class SpectralDensity():
         label : str (optional)
             Optionally pass a label to the PhaseNoise constructor
 
+        Returns
+        -------
+        phase_phase : PhaseNoise
+
         References
         ----------
         [1] IEEE Standard Definitions of Physical Quantities for Fundamental Frequency and Time 
-        Metrology — Random Instabilities (IEEE Std 1139™-2008)
+            Metrology — Random Instabilities (IEEE Std 1139™-2008)
         """
         # see Table A.1 in [1] for the conversion from S_phi(f) and L(f)
         if self.two_sided:
@@ -297,24 +405,44 @@ class SpectralDensity():
         plt.grid(True, which = 'both', ls = '-')
         return fig, ax
 
-def merge(sds):
+def merge(to_merge, label=''):
     """
-    Merges two SpectralDensity instances, e.g. from two different counter measurements with 
-    difference sample rates. For each Fourier frequency, only the density value of the 
-    SpectralDensity that first appears in `sds` is used.
+    Merges two instances of frequency or phase data. Supported classes are:
+    
+    - SpectralDensity (e.g. from two different counter measurements with  difference sample rates)
+    - PhaseNoise (for example for different frequency ranges)
+    
+    For each Fourier frequency, only the density value of the object that first appears in
+    `sto_merge` is used.
 
     Parameters
-    sds : list of SpectralDensity
+    ----------
+    to_merge : list of objects to merge
     
     Returns
     -------
-    sd : SpectralDensity
-    """  
-    freqs = np.concatenate([sd.freqs for sd in sds])
-    # FIXME: test if scaling and base is equal for all SpectralDensities
-    density = np.concatenate([sd.density for sd in sds])
-    freqs, idx = np.unique(freqs, return_index=True)
-    # use the density of the SpectralDensity that first appears in `sds`
-    density = density[idx]
-    return SpectralDensity(freqs, density, 
-        scaling=sds[0].scaling, base=sds[0].base)
+    merged : type of `to_merge`
+    """
+    # FIXME: better typechecking
+    if isinstance(to_merge[0], SpectralDensity):
+        freqs = np.concatenate([sd.freqs for sd in to_merge])
+        # FIXME: test if scaling and base is equal for all SpectralDensities
+        density = np.concatenate([sd.density for sd in to_merge])
+        # use the values that first appears in `to_merge`
+        freqs, idx = np.unique(freqs, return_index=True)
+        density = density[idx]
+        return SpectralDensity(freqs, density, scaling=to_merge[0].scaling, base=to_merge[0].base)
+    elif isinstance(to_merge[0], PhaseNoise):
+        freqs = np.concatenate([L.freqs for L in to_merge])
+        noise = np.concatenate([L.noise for L in to_merge])
+        # use the values that first appears in `to_merge`
+        freqs, idx = np.unique(freqs, return_index=True)
+        noise = noise[idx]
+        if label == '':
+            label = to_merge[0].label
+        return PhaseNoise(freqs, noise, divide_by=1, label=label)
+    else:
+        raise TypeError('Unsupported datatype.')
+
+
+

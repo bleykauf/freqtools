@@ -19,6 +19,7 @@ def import_phase_noise(filename, divide_by=1, delimiter=',', label=''):
     data = np.genfromtxt(filename, delimiter=delimiter, names=['freqs', 'noise'])
     return PhaseNoise(data['freqs'], data['noise'], divide_by=divide_by, label=label)
 
+
 class PhaseNoise():
     """
     Class for phase noise L(f).
@@ -48,6 +49,18 @@ class PhaseNoise():
         self.divide_by = divide_by
         self.noise = np.array(noise) + 20*np.log10(self.divide_by)
         self.label = label
+
+    def __getitem__(self, key):
+        freqs = self.freqs[key]
+        noise = self.noise[key]
+        phase_noise = PhaseNoise(freqs, noise, divide_by=1, label=self.label)
+        # change divide from 1 to the actual value to avoid scaling twice, since this is done in 
+        # the PhaseNoise constructor
+        phase_noise.divide_by = self.divide_by
+        return phase_noise
+
+    def __len__(self):
+        return len(self.freqs)
 
     def to_rad2_per_Hz(self, one_sided=True):
         """
@@ -92,7 +105,7 @@ class PhaseNoise():
         Returns
         -------
         accumulated_noise : 1darray
-            units depending in rad or nm/s**2, depending on `norm_to_g`
+            units depending in rad or nm/s**2, depending on `convert_to_g`
 
         Reference
         ---------
@@ -131,7 +144,7 @@ class PhaseNoise():
         ax.grid(True, which='both', axis='both')
         return fig, ax
 
-    def plot_accumulated(self, fig=None, ax=None, norm_to_g=False, k_eff=1.61e7, T=260e-3):
+    def plot_accumulated(self, fig=None, ax=None, convert_to_g=False, k_eff=1.61e7, T=260e-3):
         """
         Plots the accumulated phase noise as a function of Fourier frequency.
 
@@ -140,7 +153,7 @@ class PhaseNoise():
         fig, ax : Figure, Axis (optional)
             If a figure AND axis are provided, they will be used for the plot. if not provided, a
             new plot will automatically be created.
-        norm_to_g, k_eff, T : 
+        convert_to_g, k_eff, T : 
             see documentation for `accumulate` for description.
 
         Returns
@@ -148,11 +161,11 @@ class PhaseNoise():
         fig, ax : Figure and Axis
             The Figure and Axis handles of the plot that was used.       
         """
-        accumulated_noise = self.accumulate(norm_to_g, k_eff, T)
+        accumulated_noise = self.accumulate(convert_to_g, k_eff, T)
         if not fig:
             fig, ax = plt.subplots()
         ax.loglog(self.freqs, accumulated_noise, label=self.label)
-        if norm_to_g:
+        if convert_to_g:
             ylabel = 'accumulated AI noise / nm/s²'
         else:
             ylabel = 'accumulated phase noise / rad'
@@ -160,6 +173,7 @@ class PhaseNoise():
         ax.set_xlabel('frequency $f$ / Hz')
         ax.grid(True, which='both', axis='both')
         return fig, ax
+
 
 class MachZehnderTransferFunction():
     """
@@ -225,8 +239,8 @@ class MachZehnderTransferFunction():
         [1] P. Cheinet et al. - Measurement of the sensitivity function in a time-domain atomic 
             interferometer 
         """
-        S_phi_scaled =  abs(self.tf(noise.freqs))**2 * noise.to_rad2_per_Hz()
-        # convert back to dBc/Hz, factor 2 because using one-sided of S_phi
+        S_phi_scaled =  abs(self.tf(noise.freqs))**2 * noise.to_rad2_per_Hz(one_sided=True)
+        # convert back to dBc/Hz, factor 2 because using one-sided S_phi
         L_scaled = 10 * np.log10(S_phi_scaled/2)
         return PhaseNoise(noise.freqs, L_scaled, label=noise.label)
 

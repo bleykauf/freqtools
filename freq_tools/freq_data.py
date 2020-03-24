@@ -102,9 +102,10 @@ class SpectralDensity(FreqData):
         properties
     """
     def __init__(self, freqs, values, scaling='asd', base='freq', two_sided=True):
-        super().__init__(freqs, values, scaling=scaling, base=base, two_sided=two_sided)
-        # only one representation of the spectral density is set, the rest is calculated when 
-        # needed
+        super().__init__(freqs, values, two_sided=two_sided)
+        self._base = base
+        self._scaling = scaling
+        # only one representation of the spectral density is set, rest is calculated when needed
         attr = '{}_{}'.format(self.scaling, self.base)
         setattr(self, '_'+attr, values)
         self._alias_values()
@@ -205,7 +206,6 @@ class SpectralDensity(FreqData):
         label = label_dict[attr]
         if not fig:
             fig, ax = plt.subplots()
-        fig, ax = plt.subplots()
         ax.loglog(self.freqs, self.values)
         ax.set_xlabel('Frequency / Hz')
         ax.set_ylabel(label)

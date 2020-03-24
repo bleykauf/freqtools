@@ -5,6 +5,14 @@ import allantools
 
 from .freq_data import SpectralDensity
 
+try:
+    import scisave
+except ImportError:
+    has_scisave = False
+else:
+    has_scisave = True
+
+
 class CounterData():
     """
     Counter data, i.e. a time series of frequency data.
@@ -33,7 +41,7 @@ class CounterData():
         sampling rate in Hz
     divide_by : int
     """
-    def __init__(self, freqs, duration, divide_by=1):
+    def __init__(self, freqs, duration, divide_by=1, **kwargs):
         self.divide_by = divide_by
         self.freqs = freqs
         self.mean_frequency = np.mean(self.freqs)
@@ -142,14 +150,12 @@ class CounterData():
         plt.box(on='on')
         return fig, ax
 
-    def data_to_dict(self):
-        """Saves all properties to a dict for saving to a file etc."""
-        data_dict = {
-            'mean_frequency' : self.mean_frequency,
-            'duration' : self.duration,
-            'n_samples' : self.n_samples,
-            'sample_rate' : self.sample_rate,
-            'frequencies' : self.freqs,
-            'divide_by' : self.divide_by
-        }
-        return data_dict
+def import_json(filename, silent=False):
+    if not has_scisave:
+        ImportError('scisave (https://git.physik.hu-berlin.de/pylab/scisave) is required.')
+    else:
+        data = scisave.load_measurement(filename, silent=silent)
+        freqs = data['results']['frequencies']
+        device_settings = data['device_settings']
+        counter_data = CounterData(freqs, **device_settings)
+        return counter_data

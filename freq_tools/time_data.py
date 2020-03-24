@@ -162,7 +162,7 @@ def import_json(filename, silent=False):
         return counter_data
 
 
-def lpsd(x, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes, Kmin, fs, xi=0.5):
+def lpsd(x, fs, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes=2, Kmin=100, xi=0.5):
     """
     LPSD Power spectrum estimation with a logarithmic frequency axis.
     
@@ -176,14 +176,17 @@ def lpsd(x, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes, Kmin, f
     "We assume to have a long stream x(n), n=0, ..., N-1 of equally spaced input data sampled with 
     frequency fs. Typical values for N range from 10^4 to >10^6" - Section 8 of [1]
 
-    windowfcn : function_handle
-        Function handle to windowing function (default numpy.hanning) 
+    fs : float
+        Sampling rate
+
+    windowfcn : function_handle (default numpy.hanning) 
+        Function handle to windowing function.
         "Choose a window function w(j, l) to reduce spectral leakage within the estimate. ... The 
         computations of the window function will be performed when the segment lengths L(j) have 
         been determined." - Section 8 of [1]
     
-    fmin, fmax : float
-        Lowest and highest frequency to estimate. 
+    fmin, fmax : float (optional)
+        Lowest and highest frequency to estimate. Defaults to fs/N and fs/2.
         "... we propose not to use the first few frequency bins. The first frequency bin that 
         yields unbiased spectral estimates depends on the window function used. The bin is given by
          the effective half-width of the window transfer function." - Section 7 of [1].
@@ -192,14 +195,8 @@ def lpsd(x, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes, Kmin, f
         Desired number of Fourier frequencies (default 1000)
         "A typical value for J is 1000" - Section 8 of [1]
     
-    Kdes : int
-        Desired number of averages
-    
-    Kmin : int
-        Minimum number of averages
-    
-    fs : float
-        Sampling rate
+    Kdes, Kmin : int
+        Desired and minimum number of averages
     
     xi : float
         Fractional overlap between segments (0 <= xi < 1), default 0.5.
@@ -216,10 +213,6 @@ def lpsd(x, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes, Kmin, f
     C : dict
         dict containing calibration factors to calibrate Pxx into either power spectral density or
         power spectrum.  
-
-        - Pxx: 
-        - f: 
-        - C: 
 
     Notes
     -----
@@ -244,41 +237,33 @@ def lpsd(x, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes, Kmin, f
     # Translated from Matlab to Python by Rudolf W Byker (https://github.com/rudolfbyker/lpsd)
     # Adapted for freq_tools
 
-    if not callable(windowfcn):
-        raise TypeError("windowfcn must be callable")
-    if not (fmax > fmin):
-        raise ValueError("fmax must be greater than fmin")
-    if not (Jdes > 0):
-        raise ValueError("Jdes must be greater than 0")
-    if not (Kdes > 0):
-        raise ValueError("Kdes must be greater than 0")
-    if not (Kmin > 0):
-        raise ValueError("Kmin must be greater than 0")
-    if not (Kdes >= Kmin):
-        raise ValueError("Kdes must be greater than or equal to Kmin")
-    if not (fs > 0):
-        raise ValueError("fs must be greater than 0")
-    if not (0 <= xi < 1):
-        raise ValueError("xi must be: 0 <= xi 1")
+    assert(callable(windowfcn), "windowfcn must be callable")
+    assert(fmax > fmin, "fmax must be greater than fmin")
+    assert(Jdes > 0, "Jdes must be greater than 0")
+    assert(Kdes > 0, "Kdes must be greater than 0")
+    assert(Kmin > 0, "Kmin must be greater than 0")
+    assert(Kdes >= Kmin, "Kdes must be greater than or equal to Kmin")
+    assert(fs > 0, "fs must be greater than 0")
+    assert(0 <= xi < 1, "xi must be: 0 <= xi 1")
 
     N = len(x)  # Table 1
     jj = np.arange(Jdes, dtype=int)  # Table 1
 
-    if not (fmin >= float(fs) / N):  # Lowest frequency possible
-        raise ValueError("The lowest possible frequency is {}, but fmin={}".format(float(fs) / N), fmin)
-    if not (fmax <= float(fs) / 2):  # Nyquist rate
-        raise ValueError("The Nyquist rate is {}, byt fmax={}".format(float(fs) / 2, fmax))
+    if not fmin:
+        fmin = fs / N # lowest frequency possible
+    if not fmax:
+        fmax = fs / 2 # Nyquist frequency
 
     g = np.log(fmax) - np.log(fmin)  # (12)
     f = fmin * np.exp(jj * g / float(Jdes - 1))  # (13)
     rp = fmin * np.exp(jj * g / float(Jdes - 1)) * (np.exp(g / float(Jdes - 1)) - 1)  # (15)
 
-    # r' now contains the 'desired resolutions' for each frequency bin, given the rule that we want the resolution to be
-    # equal to the difference in frequency between adjacent bins. Below we adjust this to account for the minimum and
-    # desired number of averages.
+    # r' now contains the 'desired resolutions' for each frequency bin, given the rule that we want
+    # the resolution to be equal to the difference in frequency between adjacent bins. Below we 
+    # adjust this to account for the minimum and desired number of averages.
 
-    ravg = (float(fs) / N) * (1 + (1 - xi) * (Kdes - 1))  # (16)
-    rmin = (float(fs) / N) * (1 + (1 - xi) * (Kmin - 1))  # (17)
+    ravg = (fs / N) * (1 + (1 - xi) * (Kdes - 1))  # (16)
+    rmin = (fs / N) * (1 + (1 - xi) * (Kmin - 1))  # (17)
 
     case1 = rp >= ravg  # (18)
     case2 = np.logical_and(
@@ -293,11 +278,11 @@ def lpsd(x, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes, Kmin, f
     rpp[case2] = np.sqrt(ravg * rp[case2])  # (18)
     rpp[case3] = rmin  # (18)
 
-    # r'' contains adjusted frequency resolutions, accounting for the finite length of the data, the constraint of the
-    # minimum number of averages, and the desired number of averages.  We now round r'' to the nearest bin of the DFT
-    # to get our final resolutions r.
-    L = np.around(float(fs) / rpp).astype(int)  # segment lengths (19)
-    r = float(fs) / L  # actual resolution (20)
+    # r'' contains adjusted frequency resolutions, accounting for the finite length of the data, 
+    # the constraint of the minimum number of averages, and the desired number of averages.  We now
+    # round r'' to the nearest bin of the DFT to get our final resolutions r.
+    L = np.around(fs / rpp).astype(int)  # segment lengths (19)
+    r = fs / L  # actual resolution (20)
     m = f / r  # Fourier Tranform bin number (7)
 
     # Allocate space for some results
@@ -305,9 +290,10 @@ def lpsd(x, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes, Kmin, f
     S1 = np.empty(Jdes)
     S2 = np.empty(Jdes)
 
-    # Loop over frequencies.  For each frequency, we basically conduct Welch's method with the fourier transform length
-    # chosen differently for each frequency.
-    # TODO: Try to eliminate the for loop completely, since it is unpythonic and slow. Maybe write doctests first...
+    # Loop over frequencies.  For each frequency, we basically conduct Welch's method with the 
+    # fourier transform length chosen differently for each frequency.
+    # TODO: Try to eliminate the for loop completely, since it is unpythonic and slow. Maybe write 
+    # doctests first...
     for jj in range(len(f)):
 
         # Calculate the number of segments

@@ -48,6 +48,7 @@ class CounterData():
         self.duration = duration
         self.n_samples = len(self.freqs)
         self.sample_rate = int(self.n_samples/self.duration)
+        del kwargs # to avoid warning by pylint
 
     def asd(self, method='welch'):
         """
@@ -63,11 +64,14 @@ class CounterData():
         asd : SpectralDensity
             Creates a SpectralDenisty object and initializes it with the calculated ASD
         """
-        # TODO: provide other methods to calculate the ASD
         if method == 'welch':
             f, Pxx = welch(self.freqs, self.sample_rate, ('kaiser', 100), 
                 nperseg=1024, scaling='density')
             asd = self.divide_by * np.sqrt(Pxx)
+        elif method == 'lpsd':
+            raise(Exception("This doesn't work yet! Use 'welch' instead."))
+            f, Pxx, C = lpsd(self.freqs, self.sample_rate)
+            asd = self.divide_by * np.sqrt(C['PSD'] * Pxx)
         return SpectralDensity(f, asd, scaling='asd', base='freq', two_sided=True)
 
     def adev(self, scaling=780e-9/2.99e8):
@@ -112,8 +116,8 @@ class CounterData():
             fig, ax = plt.subplots()
         ax.plot(t, self.freqs, 
             label = 'Mean frequency: ({:3f}+/-{:3f}) MHz'.format(
-                self.mean_frequency*1e-6,
-                np.std(self.freqs)*1e-6
+                self.mean_frequency * 1e-6,
+                np.std(self.freqs) * 1e-6
                 )
             )
         ax.set_xlabel('time t (s)')
@@ -153,13 +157,13 @@ class CounterData():
 def import_json(filename, silent=False):
     if not has_scisave:
         ImportError('scisave (https://git.physik.hu-berlin.de/pylab/scisave) is required.')
-        return None
+        counter_data = None
     else:
         data = scisave.load_measurement(filename, silent=silent)
         freqs = data['results']['frequencies']
         device_settings = data['device_settings']
         counter_data = CounterData(freqs, **device_settings)
-        return counter_data
+    return counter_data
 
 
 def lpsd(x, fs, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes=2, Kmin=100, xi=0.5):
@@ -223,47 +227,37 @@ def lpsd(x, fs, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes=2, K
     
     References
     ----------
-    [1] Michael Tröbs and Gerhard Heinzel, "Improved spectrum estimation
-      from digitized time series on a logarithmic frequency axis," in
-      Measurement, vol 39 (2006), pp 120-129.
+    [1] Michael Tröbs and Gerhard Heinzel, "Improved spectrum estimationfrom digitized time series 
+    on a logarithmic frequency axis," in Measurement, vol 39 (2006), pp 120-129.
         * http://dx.doi.org/10.1016/j.measurement.2005.10.010
-        * http://pubman.mpdl.mpg.de/pubman/item/escidoc:150688:1
     
-    [2] Michael Tröbs and Gerhard Heinzel, Corrigendum to "Improved
-      spectrum estimation from digitized time series on a logarithmic
-      frequency axis."       
+    [2] Michael Tröbs and Gerhard Heinzel, Corrigendum to "Improved spectrum estimation from 
+    digitized time series on a logarithmic frequency axis."       
     """
     # Originally implemented in Matlab by Tobin Fricke: https://github.com/tobin/lpsd
     # Translated from Matlab to Python by Rudolf W Byker (https://github.com/rudolfbyker/lpsd)
     # Adapted for freq_tools
 
-    assert(callable(windowfcn), "windowfcn must be callable")
-    assert(fmax > fmin, "fmax must be greater than fmin")
-    assert(Jdes > 0, "Jdes must be greater than 0")
-    assert(Kdes > 0, "Kdes must be greater than 0")
-    assert(Kmin > 0, "Kmin must be greater than 0")
-    assert(Kdes >= Kmin, "Kdes must be greater than or equal to Kmin")
-    assert(fs > 0, "fs must be greater than 0")
-    assert(0 <= xi < 1, "xi must be: 0 <= xi 1")
-
+    raise(Exception("This doesn't work yet!"))
+    
     N = len(x)  # Table 1
     jj = np.arange(Jdes, dtype=int)  # Table 1
 
-    if not fmin:
-        fmin = fs / N # lowest frequency possible
-    if not fmax:
-        fmax = fs / 2 # Nyquist frequency
+    x = np.array(x)
+    # if not provided, set lowest and highest frequency
+    fmin = fs / N if not fmin else fmin # lowest possible frequency
+    fmax = fs / 2 if not fmax else fmax # highest possible frequency
 
     g = np.log(fmax) - np.log(fmin)  # (12)
     f = fmin * np.exp(jj * g / float(Jdes - 1))  # (13)
     rp = fmin * np.exp(jj * g / float(Jdes - 1)) * (np.exp(g / float(Jdes - 1)) - 1)  # (15)
 
-    # r' now contains the 'desired resolutions' for each frequency bin, given the rule that we want
-    # the resolution to be equal to the difference in frequency between adjacent bins. Below we 
-    # adjust this to account for the minimum and desired number of averages.
+    # r' now contains the 'desired resolutions' for each frequency bin, given the rule that we want the resolution to be
+    # equal to the difference in frequency between adjacent bins. Below we adjust this to account for the minimum and
+    # desired number of averages.
 
-    ravg = (fs / N) * (1 + (1 - xi) * (Kdes - 1))  # (16)
-    rmin = (fs / N) * (1 + (1 - xi) * (Kmin - 1))  # (17)
+    ravg = (float(fs) / N) * (1 + (1 - xi) * (Kdes - 1))  # (16)
+    rmin = (float(fs) / N) * (1 + (1 - xi) * (Kmin - 1))  # (17)
 
     case1 = rp >= ravg  # (18)
     case2 = np.logical_and(
@@ -278,11 +272,11 @@ def lpsd(x, fs, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes=2, K
     rpp[case2] = np.sqrt(ravg * rp[case2])  # (18)
     rpp[case3] = rmin  # (18)
 
-    # r'' contains adjusted frequency resolutions, accounting for the finite length of the data, 
-    # the constraint of the minimum number of averages, and the desired number of averages.  We now
-    # round r'' to the nearest bin of the DFT to get our final resolutions r.
-    L = np.around(fs / rpp).astype(int)  # segment lengths (19)
-    r = fs / L  # actual resolution (20)
+    # r'' contains adjusted frequency resolutions, accounting for the finite length of the data, the constraint of the
+    # minimum number of averages, and the desired number of averages.  We now round r'' to the nearest bin of the DFT
+    # to get our final resolutions r.
+    L = np.around(float(fs) / rpp).astype(int)  # segment lengths (19)
+    r = float(fs) / L  # actual resolution (20)
     m = f / r  # Fourier Tranform bin number (7)
 
     # Allocate space for some results
@@ -290,10 +284,9 @@ def lpsd(x, fs, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes=2, K
     S1 = np.empty(Jdes)
     S2 = np.empty(Jdes)
 
-    # Loop over frequencies.  For each frequency, we basically conduct Welch's method with the 
-    # fourier transform length chosen differently for each frequency.
-    # TODO: Try to eliminate the for loop completely, since it is unpythonic and slow. Maybe write 
-    # doctests first...
+    # Loop over frequencies.  For each frequency, we basically conduct Welch's method with the fourier transform length
+    # chosen differently for each frequency.
+    # TODO: Try to eliminate the for loop completely, since it is unpythonic and slow. Maybe write doctests first...
     for jj in range(len(f)):
 
         # Calculate the number of segments

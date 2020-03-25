@@ -1,7 +1,7 @@
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
-import copy
 
 def import_csv(filename, as_class, delimiter=',', **kwargs):
     """
@@ -18,8 +18,6 @@ def import_csv(filename, as_class, delimiter=',', **kwargs):
     Returns
     -------
     instance : as defined in as_class
-        
-
     """
     data = np.genfromtxt(filename, dtype=float , delimiter=delimiter, comments='%', 
         names=['freqs','values'])

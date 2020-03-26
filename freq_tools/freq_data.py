@@ -27,11 +27,11 @@ def import_csv(filename, as_class, delimiter=',', **kwargs):
 
 class FreqData():
     def __init__(self, freqs, values, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         self.freqs = np.array(freqs)
         self.values = np.array(values)
         assert(len(self.values) == len(self.values))
-        for key, value in kwargs.items():
-            setattr(self, key, value)
 
     def __getitem__(self, key):
         new_instance = copy.deepcopy(self)
@@ -100,19 +100,11 @@ class SpectralDensity(FreqData):
         properties
     """
     def __init__(self, freqs, values, scaling='asd', base='freq', two_sided=True):
-        super().__init__(freqs, values, two_sided=two_sided)
-        self._base = base
-        self._scaling = scaling
+        # HACK: set _scaling and _base directly, otherwise setting of values fails
+        super().__init__(freqs, values, _scaling=scaling, _base=base, two_sided=two_sided)
         # only one representation of the spectral density is set, rest is calculated when needed
         attr = '{}_{}'.format(self.scaling, self.base)
         setattr(self, '_'+attr, values)
-        self._alias_values()
-
-    def _alias_values(self):
-        # changes what self.values returns. This fuction is called, whenever `base` or `scaling`
-        # are changed.
-        attr = '{}_{}'.format(self.scaling, self.base)
-        self.values = getattr(self, attr)
 
     @property
     def base(self):
@@ -122,7 +114,6 @@ class SpectralDensity(FreqData):
         assert base in ['freq', 'phase']
         self._base = base
         # change what self.values returns
-        self._alias_values()
 
     @property
     def scaling(self):
@@ -132,7 +123,22 @@ class SpectralDensity(FreqData):
         assert scaling in ['asd', 'psd']
         self._scaling = scaling
         # change what self.values returns
-        self._alias_values()
+
+    @property
+    def values(self):
+        attr = '{}_{}'.format(self.scaling, self.base)
+        return getattr(self, attr)
+    @values.setter
+    def values(self, vals):
+        # remove data from properties because they have to be recalculated 
+        for attr in ['_asd_freq', '_psd_freq', '_asd_phase', '_psd_phase']:
+            try:
+                delattr(self, attr)
+            except AttributeError:
+                # some attributes might not have been set
+                pass
+        attr = '{}_{}'.format(self.scaling, self.base)
+        setattr(self, '_'+attr, vals)
 
     @property
     def asd_freq(self):

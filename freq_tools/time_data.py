@@ -60,14 +60,14 @@ class CounterData():
             Creates a SpectralDenisty object and initializes it with the calculated ASD
         """
         if method == 'welch':
-            f, Pxx = welch(self.freqs, self.sample_rate, ('kaiser', 100), 
+            f, Pxx = welch(self.freqs, self.sample_rate, ('kaiser', 100),  return_onesided=True,
                 nperseg=1024, scaling='density')
             asd = self.divide_by * np.sqrt(Pxx)
         elif method == 'lpsd':
             raise(Exception("This doesn't work yet! Use 'welch' instead."))
             f, Pxx, C = lpsd(self.freqs, self.sample_rate)
             asd = self.divide_by * np.sqrt(C['PSD'] * Pxx)
-        return SpectralDensity(f, asd, scaling='asd', base='freq', two_sided=True)
+        return SpectralDensity(f, asd, scaling='asd', base='freq', two_sided=False)
 
     def adev(self, scaling=780e-9/2.99e8):
         """

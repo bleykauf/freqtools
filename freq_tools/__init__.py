@@ -7,5 +7,5 @@ from . import io
 from .time_data import CounterData
 from .freq_data import SpectrumAnalyzerData, SpectralDensity, PhaseNoise
 from .transfer_function import  TransferFunction, MachZehnderTransferFunction
-from .noise_model import PhaseNoiseModel, JohnsonNoise, PhotonShotNoise, NoiseFloor
+from .noise_model import PhaseNoiseModel, JohnsonNoise, PhotonShotNoise, NoiseFloor, BetaLine
 from .io import import_csv, import_json

@@ -21,6 +21,9 @@ def import_json(filename, as_class, silent=False, **kwargs):
     as_class : CounterData or TransferFunction
     silent : bool (optional, default False)
         import is done without printing info if False
+    **kwargs :
+        these keyworded arguments will be passed to the constructor of the object that is to be
+        created, e.g. `divide_by` for a CounterData object.
     
     Returns
     -------
@@ -33,7 +36,7 @@ def import_json(filename, as_class, silent=False, **kwargs):
     if as_class == CounterData:
         freqs = data['results']['frequencies']
         device_settings = data['device_settings']
-        obj = CounterData(freqs, **device_settings)
+        obj = CounterData(freqs, **device_settings, **kwargs)
     elif as_class == TransferFunction:
         freqs = data['results']['frequency']
         magnitude = data['results']['magnitude']

@@ -104,9 +104,10 @@ class SpectralDensity(FreqData):
         the spectral density in differenct representations. `density` maps to on of these 
         properties
     """
-    def __init__(self, freqs, values, scaling='asd', base='freq', two_sided=True):
+    def __init__(self, freqs, values, scaling='asd', base='freq', two_sided=False, **kwargs):
         # HACK: set _scaling and _base directly, otherwise setting of values fails
-        super().__init__(freqs, values, _scaling=scaling, _base=base, two_sided=two_sided)
+        super().__init__(freqs, values, _scaling=scaling, _base=base,
+                        two_sided=two_sided, **kwargs)
         # only one representation of the spectral density is set, rest is calculated when needed
         attr = '{}_{}'.format(self.scaling, self.base)
         setattr(self, '_'+attr, values)
@@ -215,7 +216,7 @@ class SpectralDensity(FreqData):
         label = label_dict[attr]
         if not fig:
             fig, ax = plt.subplots()
-        ax.loglog(self.freqs, self.values)
+        ax.loglog(self.freqs, self.values, label=self.label)
         ax.set_xlabel('Frequency / Hz')
         ax.set_ylabel(label)
         plt.grid(True, which = 'both', ls = '-')

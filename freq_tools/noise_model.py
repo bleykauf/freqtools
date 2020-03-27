@@ -1,6 +1,116 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 
+class BetaLine():
+    """
+    The beta separation line as a function of frequency. It is defined for the single-sided 
+    spectral density (in Hz²/Hz).
+
+    References
+    ----------
+    [1] Di Domenico, G., Schilt, S., & Thomann, P. (2010). Simple approach to the relation between 
+        laser frequency noise and laser line shape. Applied Optics, 49(25), 4801.
+        https://doi.org/10.1364/AO.49.004801
+    """
+    def values(self, freqs):
+        """
+        The values of the beta separation line in Hz²/Hz as a function of frequency
+
+        Parameters
+        ----------
+        freqs : float or list_like
+            Frequency in Hz
+        
+        Returns
+        -------
+        1d array : 
+            The values of the beta separation line.
+        """
+        return 8 * np.log(2) * np.array(freqs) / np.pi**2
+
+    def plot(self, freqs, fig=None, ax=None):
+        """
+        Plots the beta separation line.
+        """
+        if not fig:
+            fig, ax = plt.subplots()
+        ax.plot(freqs, self.values(freqs), label=r'$\beta$ separation line')
+        ax.set_xscale('log')
+        ax.set_xlabel('Frequency / Hz')
+        plt.grid(True, which = 'both', ls = '-')
+        return fig, ax
+    
+    def intersection(self, density, search_range=(1e0, 1e8), **kwargs):
+        """
+        Returns the intersection between a PSD and the beta separation line
+
+        Parameters
+        ----------
+        density : SpectralDensity
+            A SpectralDensity object. Correct scaling and base (PSD of frequency) will 
+            automatically be used.
+        search_range : tupel (default (1e0, 1e8))
+            intersection is searched within these frequency limits (in Hz)
+        **kwargs:
+            keyworded arguments that control the `interpolation_options` of the density, e.g. 
+            'fill_value'.
+
+        Returns
+        -------
+        float : 
+            the frequency where the two lines intersect in Hz
+        """
+        psd = self._get_psd(density, **kwargs)
+        freqs = np.logspace(np.log10(search_range[0]), np.log10(search_range[1]), 1000)
+        psd_vals = psd.values_interp(freqs)
+        beta_vals = self.values(freqs)
+        # indices of the intersections
+        idx = np.argwhere(np.diff(np.sign(psd_vals - beta_vals))).flatten()
+        return freqs[idx][0]
+    
+
+    def linewidth(self, density, f_min=1e3, f_max=None, n=1000, **kwargs):
+        """
+        The FWHM linewidth according to equation (10) in [1].
+
+        Parameters
+        ----------
+        density : SpectralDensity
+            A SpectralDensity object. Correct scaling and base (PSD of frequency) will 
+            automatically be used.
+        f_min, fmax : float
+            minimum and maximum values of the frequency that should be considered in Hz. The 
+            default value for f_min (1e-3) corresponds to 1 ms. If no maximum frequency is given
+            it is determined from the intersection with the beta separation line.
+        n : int
+            the number of points used for the integration
+        **kwargs:
+            keyworded arguments that control the `interpolation_options` of the density, e.g. 
+            'fill_value'.
+        """
+        psd = self._get_psd(density, **kwargs)
+        if not f_max:
+            f_max = self.intersection(density)
+        freqs = np.logspace(np.log10(f_min), np.log10(f_max), n)
+        beta_vals = self.values(freqs)
+        psd_vals = psd.values_interp(freqs)
+        # equation (10) in [1]
+        area =  np.trapz(np.heaviside(psd_vals, beta_vals) * psd_vals, x=freqs)
+        fwhm = np.sqrt(8 * np.log(2) * area) # equation (9) in [1]
+        return fwhm
+
+    def _get_psd(self, density, **kwargs):
+        # make a copy of a SpectralDensity object with correct base and scaling for usage for the
+        # beta separation line.
+        psd = copy.deepcopy(density) # so it toesn't mess with the original object
+        psd.base = 'freq'
+        psd.scaling = 'psd'
+        psd.interpolation_options['fill_value'] = (psd.values[0], psd.values[-1])
+        # additional user-set interpolation options, might overwrite fill_value
+        for key, value in kwargs.items():
+            psd.interpolation_options[key] = value
+        return psd
 
 class PhaseNoiseModel():
     """

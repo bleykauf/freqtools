@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 class PhaseNoiseModel():
     """
     Plots the time record of the data.
@@ -114,7 +115,7 @@ class PhotonShotNoise(PhaseNoiseModel):
         freqs = np.ones(len(freqs))
         noise = 10 * np.log10(2 * e * self.radiant_sensitivity * self.optical_power * 
             self.resistivity / 1e-3) * freqs - self.signal_power
-        # FIXME: Assume one-sided distribution, but didn't check
+        # FIXME: Assume this to be a one-sided distribution, but didn't check
         noise -= 3
         return noise
 

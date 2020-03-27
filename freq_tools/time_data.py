@@ -5,12 +5,7 @@ import allantools
 
 from .freq_data import SpectralDensity
 
-try:
-    import scisave
-except ImportError:
-    has_scisave = False
-else:
-    has_scisave = True
+
 
 
 class CounterData():
@@ -153,17 +148,6 @@ class CounterData():
         plt.grid(b='on', which = 'minor', axis = 'both')
         plt.box(on='on')
         return fig, ax
-
-def import_json(filename, silent=False):
-    if not has_scisave:
-        ImportError('scisave (https://git.physik.hu-berlin.de/pylab/scisave) is required.')
-        counter_data = None
-    else:
-        data = scisave.load_measurement(filename, silent=silent)
-        freqs = data['results']['frequencies']
-        device_settings = data['device_settings']
-        counter_data = CounterData(freqs, **device_settings)
-    return counter_data
 
 
 def lpsd(x, fs, windowfcn=np.hanning, fmin=None, fmax=None, Jdes=1000, Kdes=2, Kmin=100, xi=0.5):

@@ -3,29 +3,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 
-def import_csv(filename, as_class, delimiter=',', **kwargs):
+
+class FreqData():
     """
-    Import data from a .csv and create a FreqData object from it.
-    All of the keyworded arguments needed to construct the class inheriting from Freqdata(e.g. 
-    `rbw` for `SpectrumAnalyzerData`) have to be passed to the function as keyworded arguments. 
+    Base class for frequency data, i.e. values (y axis) as a function of frequency (x axis).
 
     Parameters
     ----------
-    filename : str
-    as_class : FreqData
-        FreqData or one of its subclasses
+    freqs : list_like
+        Fourier frequency in Hz
+    values : list_like
+        the values corresponding to freq
+    **kwargs :
+        All keyworded arguments will be added as attributes.
 
-    Returns
-    -------
-    instance : as defined in as_class
+    Attribues
+    ---------
+    interpolation_options : dict
+        options passed to `scipy.interpolation.interp1d`
     """
-    data = np.genfromtxt(filename, dtype=float , delimiter=delimiter, comments='%', 
-        names=['freqs','values'])
-    instance = as_class(data['freqs'], data['values'], **kwargs)
-    return instance
-
-
-class FreqData():
     def __init__(self, freqs, values, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -46,7 +42,16 @@ class FreqData():
                              'fill_value' : 0.0,
                              'bounds_error' : False}
 
-    def interpolated_values(self, freqs):
+    def values_interp(self, freqs):
+        """
+        Interpolated values. Behaviour of the interpolation can be controlled with the 
+        `interpolation_options` attribute of FreqData.
+
+        Parameters
+        ----------
+        freq : float or list_like
+            Frequncy in Hz
+        """
         func = interp1d(self.freqs, self.values, **self.interpolation_options)
         return func(freqs)
         
@@ -437,6 +442,14 @@ class PhaseNoise(FreqData):
 
 
 class AccumulatedPhaseNoise(FreqData):
+    """
+    A class containing accumulated phase noise.
+
+    Parameters
+    ----------
+    freqs, values : list_like
+        Fourier frequency in Hz and the corresponding accumulated phase noies.
+    """
 
     def __init__(self, freqs, values, label=''):
         super().__init__(freqs, values, label=label)

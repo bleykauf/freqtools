@@ -2,13 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from .freq_data import PhaseNoise
 
-try:
-    import scisave
-except ImportError:
-    has_scisave = False
-else:
-    has_scisave = True
-
 class TransferFunction():
     """
     Class for transfer functions measured e.g. by a network analyzer
@@ -90,18 +83,6 @@ class TransferFunction():
         ax2.set_ylim(ylim)
         
         return fig, (ax1, ax2)
-
-def import_json(filename, silent=False, **kwargs):
-    if not has_scisave:
-        ImportError('scisave (https://git.physik.hu-berlin.de/pylab/scisave) is required.')
-        tf = None
-    else:
-        data = scisave.load_measurement(filename, silent=silent)
-        freqs = data['results']['frequency']
-        magnitude = data['results']['magnitude']
-        phase = data['results']['phase']
-        tf = TransferFunction(freqs, magnitude, phase, **kwargs)
-    return tf
 
 
 class MachZehnderTransferFunction():

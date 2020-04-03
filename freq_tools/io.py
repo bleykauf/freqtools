@@ -1,5 +1,14 @@
+"""
+Submodule containing some functions for reading some file formats containing time- or frequency-
+based data and creates the respective objects. Relies of the scisave package [1].
+
+References
+----------
+[1] https://git.physik.hu-berlin.de/pylab/scisave
+"""
+
 import numpy as np
-from .transfer_function import TransferFunction
+from .transfer_functions import TransferFunction
 from .time_data import CounterData
 
 try:
@@ -47,7 +56,7 @@ def import_json(filename, as_class, silent=False, **kwargs):
     return obj
 
 
-def import_csv(filename, as_class, delimiter=',', **kwargs):
+def import_csv(filename, as_class, delimiter=',', skip_header=0, **kwargs):
     """
     Import data from a .csv and create a FreqData object from it.
     All of the keyworded arguments needed to construct the class inheriting from Freqdata(e.g. 
@@ -58,12 +67,16 @@ def import_csv(filename, as_class, delimiter=',', **kwargs):
     filename : str
     as_class : FreqData
         FreqData or one of its subclasses
+    delimiter : str (optional)
+        delimiter of the file, e.g. '\t' for .tsv files
+    skip_header : int, (optional)
+        the number of lines to skip at the beginning of the file
 
     Returns
     -------
     instance : as defined in as_class
     """
-    data = np.genfromtxt(filename, dtype=float , delimiter=delimiter, comments='%', 
-        names=['freqs','values'])
+    data = np.genfromtxt(filename, dtype=float , delimiter=delimiter, skip_header=skip_header,
+                        comments='%', names=['freqs','values'])
     instance = as_class(data['freqs'], data['values'], **kwargs)
     return instance

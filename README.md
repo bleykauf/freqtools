@@ -18,7 +18,7 @@ python setup.py develop
 
 The main feature are simple conversion between power and amplitude spectral densities as shown in this diagram.
 
-![png](docs/representaions.png)
+![svg](./docs/representations.svg)
 
 The other features are shown in the Example section below.
 
@@ -140,12 +140,6 @@ We can also convert this data to phase noise (in a `OscillatorNoise` object) and
 laser_noise_from_spec = spectrum.to_oscillator_noise()
 laser_noise_from_spec.plot()
 ```
-
-
-
-
-    (<Figure size 432x288 with 1 Axes>,
-     <matplotlib.axes._subplots.AxesSubplot at 0x29b7c9bca08>)
 
 
 ![png](docs/output_23_1.png)

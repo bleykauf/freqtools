@@ -63,8 +63,8 @@ class CounterData():
         """
         f, Pxx = welch(self.freqs, self.sample_rate, ('kaiser', 100),  return_onesided=True,
             nperseg=1024, scaling='density')
-        psd = self.divide_by * Pxx
-        return OscillatorNoise(f, psd, representation='psd_freq', n_sided=1)
+        return OscillatorNoise(f, Pxx, representation='psd_freq', n_sided=1,
+                                divide_by=self.divide_by)
 
     def adev(self, scaling=1):
         """

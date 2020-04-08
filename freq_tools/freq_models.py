@@ -445,72 +445,58 @@ class BetaLine(OscillatorNoiseModel):
         return 8 * np.log(2) * np.array(freqs) / np.pi**2
 
     
-    def intersection(self, density, search_range=(1e0, 1e8), **kwargs):
+    def intersection(self, density, which='first'):
         """
-        Returns the intersection between a PSD and the beta separation line
+        Returns the freqeuncy where the PSD and the beta separation line intersect.
 
         Parameters
         ----------
-        density : PhaseFreqNoise
-            A PhaseFreqNoise object. Correct scaling and base (PSD of frequency) will 
-            automatically be used.
-        search_range : tupel (default (1e0, 1e8))
-            intersection is searched within these frequency limits (in Hz)
-        **kwargs:
-            keyworded arguments that control the `interpolation_options` of the density, e.g. 
-            'fill_value'.
+        density : OscillatorNoise
+            A OscillatorNoise object. Correct representation (PSD of frequency) will automatically
+            be used.
+        which : {'first', 'last'}
+            if there are more intersections between beta separation line and PSD, this argument
+            determines whether the lowest (first, default) or highest (last) intersection frequency
+             should be returned. 
 
         Returns
         -------
         float : 
             the frequency where the two lines intersect in Hz
         """
-        psd = _get_psd(density, **kwargs)
-        freqs = np.logspace(np.log10(search_range[0]), np.log10(search_range[1]), 1000)
-        psd_vals = psd.values_interp(freqs)
-        beta_vals = self.values(freqs)
-        # indices of the intersections
+        psd_vals = density.psd_freq
+        beta_vals = self.values(density.freqs)
+        # indices of the intersections, i.e. where the sign of the difference between the PSD and
+        # the beta separation line switches.
         idx = np.argwhere(np.diff(np.sign(psd_vals - beta_vals))).flatten()
-        return freqs[idx][0]
+        first_or_last = {'first' : 0, 'last' : -1}
+        if idx.size == 0: # array is empty
+            return np.inf
+        return density.freqs[idx][first_or_last[which]]
     
 
-    def linewidth(self, noise, f_min=1e3, f_max=None, n=1000, **kwargs):
+    def linewidth(self, density, f_min=1e3, which='first'):
         """
         The FWHM linewidth according to equation (10) in [1].
 
         Parameters
         ----------
-        density : PhaseFreqNoise
+        density : OscillatorNoise
             A PhaseFreqNoise object. Correct scaling and base (PSD of frequency) will 
             automatically be used.
-        f_min, fmax : float
-            minimum and maximum values of the frequency that should be considered in Hz. The 
-            default value for f_min (1e-3) corresponds to 1 ms. If no maximum frequency is given
-            it is determined from the intersection with the beta separation line.
-        n : int
-            the number of points used for the integration
-        **kwargs:
-            keyworded arguments that control the `interpolation_options` of the density, e.g. 
-            'fill_value'.
+        f_min : float
+            minimum values of the frequency that should be considered in Hz. The 
+            default value for f_min (1e-3) corresponds to 1 ms.
+        which : {'first', 'last'}
+            if there are more intersections between beta separation line and PSD, this argument
+            determines whether the lowest (first, default) or highest (last) intersection frequency
+             should be returned. 
         """
-        psd = _get_psd(noise, **kwargs)
-        if not f_max:
-            f_max = self.intersection(noise)
-        freqs = np.logspace(np.log10(f_min), np.log10(f_max), n)
-        beta_vals = self.psd_freq(freqs)
-        psd_vals = psd.values_interp(freqs)
+        f_max = self.intersection(density, which=which)
+        idx = np.where(np.logical_and(density.freqs <= f_max, density.freqs >= f_min))
+        freqs = density.freqs[idx]
+        psd_vals_over_line = density.values[idx]
         # equation (10) in [1]
-        area =  np.trapz(np.heaviside(psd_vals, beta_vals) * psd_vals, x=freqs)
+        area =  np.trapz(psd_vals_over_line, x=freqs)
         fwhm = np.sqrt(8 * np.log(2) * area) # equation (9) in [1]
         return fwhm
-
-
-def _get_psd(noise, **kwargs):
-    # make a copy of a OscillatorNoise object with correct base and scaling for usage for the
-    # beta separation line.
-    psd = copy.deepcopy(noise) # so it toesn't mess with the original object
-    psd.representation = 'psd_freq'
-    # additional user-set interpolation options, might overwrite fill_value
-    for key, value in kwargs.items():
-        psd.interpolation_options[key] = value
-    return psd

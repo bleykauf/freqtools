@@ -50,13 +50,11 @@ class CounterData:
 
     def to_oscillator_noise(self):
         """
-        Caluclates the two-sided amplitude spectral density (ASD) in Hz/sqrt(Hz).
+        Create a OscillatorNoise object using the Welch method.
 
         Returns
         -------
-        noise : OscillatorNoise
-            Creates a SpectralDenisty object and initializes it with the calculated ASD
-            using the Welch method
+        OscillatorNoise
         """
         f, Pxx = welch(
             self.freqs,

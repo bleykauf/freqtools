@@ -3,12 +3,15 @@ Submodule containing frequency-based data.
 
 References
 ----------
-[1] Riehle, F. (2006). Frequency Standards: Basics and Applications. 
+[1] Riehle, F. (2006). Frequency Standards: Basics and Applications.
     Weinheim: Wiley-VCH. https://doi.org/10.1109/2944.902135
-[2] IEEE Standard Definitions of Physical Quantities for Fundamental Frequency and Time Metrology
-     — Random Instabilities (Vol. 2008). https://doi.org/10.1109/IEEESTD.2009.6581834
-[3] Walls, F. L. (2001). Phase noise issues in femtosecond lasers. Laser Frequency Stabilization, 
-    Standards, Measurement, and Applications, 4269, 170. https://doi.org/10.1117/12.424466
+[2] IEEE Standard Definitions of Physical Quantities for Fundamental Frequency and Time
+     Metrology — Random Instabilities (Vol. 2008).
+     https://doi.org/10.1109/IEEESTD.2009.6581834
+[3] Walls, F. L. (2001). Phase noise issues in femtosecond lasers. Laser Frequency
+    Stabilization,
+    Standards, Measurement, and Applications, 4269, 170.
+    https://doi.org/10.1117/12.424466
 """
 
 import copy
@@ -17,11 +20,11 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 
 
-class FreqData():
+class FreqData:
     """
-    Base class for frequency data, i.e. values (y axis) as a function of frequency (x axis). Its 
-    functionality is purposfully kept simple and its main purpose is to implement basic behaviour
-    like magic functions, e.g. support for slicing.
+    Base class for frequency data, i.e. values (y axis) as a function of frequency
+    (x axis). Its functionality is purposfully kept simple and its main purpose is to
+    implement basic behaviour like magic functions, e.g. support for slicing.
 
     Parameters
     ----------
@@ -41,17 +44,20 @@ class FreqData():
     interpolation_options : dict
         options passed to `scipy.interpolation.interp1d`
     """
+
     def __init__(self, freqs, values, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
         self.freqs = np.array(freqs)
         self.values = np.array(values)
 
-        self.interpolation_options = {'kind' : 'linear',
-                                      'fill_value' : 0.0,
-                                      'bounds_error' : False}
+        self.interpolation_options = {
+            "kind": "linear",
+            "fill_value": 0.0,
+            "bounds_error": False,
+        }
 
-        assert(len(self.values) == len(self.freqs))
+        assert len(self.values) == len(self.freqs)
 
     def __getitem__(self, key):
         new_instance = copy.deepcopy(self)
@@ -64,7 +70,7 @@ class FreqData():
 
     def values_interp(self, freqs):
         """
-        Interpolated values. Behaviour of the interpolation can be controlled with the 
+        Interpolated values. Behaviour of the interpolation can be controlled with the
         `interpolation_options` attribute of FreqData.
 
         Parameters
@@ -74,35 +80,37 @@ class FreqData():
         """
         func = interp1d(self.freqs, self.values, **self.interpolation_options)
         return func(freqs)
-        
+
     def join(self, others):
         """
-        Joins another instance of FreqData. Only one value per fourier frequency is used, 
-        with preference for the ones appearing in `self`, followed by the first items in `other`.
+        Joins another instance of FreqData. Only one value per fourier frequency is
+        used, with preference for the ones appearing in `self`, followed by the first
+        items in `other`.
 
         Parameters
         ----------
         others : (list of) FreqData
         """
         if not isinstance(others, list):
-            # if only one FreqData is to be joined wrap it in a list for the for loop to work
+            # if only one FreqData is to be joined wrap it in a list for the for loop to
+            #  work
             others = [others]
         freqs = np.concatenate([self.freqs, *[other.freqs for other in others]])
         values = np.concatenate([self.values, *[other.values for other in others]])
-        # if there are the same `freqs` multiple times, prefere the `values` in `self` or the first
-        #  that appear in `other`
+        # if there are the same `freqs` multiple times, prefere the `values` in `self`
+        # or the first that appear in `other`
         self.freqs, idx = np.unique(freqs, return_index=True)
         self.values = values[idx]
 
-    def plot(self, ax=None, xscale='log', yscale='log', ylabel=''):
+    def plot(self, ax=None, xscale="log", yscale="log", ylabel=""):
         """
         Plots the `values` as a function of `freqs`.
 
         Parameters
         ----------
         ax : Axis (optional)
-            If axis is provided, they will be used for the plot. if not provided, a new plot will
-            automatically be created.
+            If axis is provided, they will be used for the plot. if not provided, a new
+            plot will automatically be created.
         xscale : {'log', 'linear'}
             Scaling of the x axis
         yscale : {'log', 'linear'}
@@ -124,17 +132,17 @@ class FreqData():
         ax.set_xscale(xscale)
         ax.set_yscale(yscale)
         ax.set_ylabel(ylabel)
-        ax.set_xlabel('Frequency / Hz')
+        ax.set_xlabel("Frequency / Hz")
 
         return fig, ax
 
 
 class OscillatorNoise(FreqData):
     """
-    A class holding spectral density data of oscillator noise, i.e. frequency or phase noise.
-    Its main purpose is to make it easy to convert between ASD(f), PSD(f) and L(f) in terms of both
-    frequency and phase noise. The data is provided in one of these representations and makes all
-    other representations available.
+    A class holding spectral density data of oscillator noise, i.e. frequency or phase
+    noise. Its main purpose is to make it easy to convert between ASD(f), PSD(f) and
+    L(f) in terms of both frequency and phase noise. The data is provided in one of
+    these representations and makes all other representations available.
 
     Parameters
     ----------
@@ -148,20 +156,23 @@ class OscillatorNoise(FreqData):
             - PSD of frequency noise: Hz²/Hz
             - L(f) ("script ell of f"): dBc/Hz
 
-        Note that these units might be different, if the OscillatorNoise instance is generated by
-        the `accumulate` method (it integrates over the frequency axis, dropping the Hz in the 
-        denominator) or by scaling with a transfer function. E.g. the MachZehnderTransferFunction,
-        might convert rad² to m/s². If in doubt, check the `unit` attribute.
+        Note that these units might be different, if the OscillatorNoise instance is
+        generated by the `accumulate` method (it integrates over the frequency axis,
+        dropping the Hz in the denominator) or by scaling with a transfer function. E.g.
+        the MachZehnderTransferFunction, might convert rad² to m/s². If in doubt, check
+        the `unit` attribute.
 
     representation : {'asd_phase', 'psd_phase', 'asd_freq', 'psd_freq', 'script_L'}
         The representation the `values` are provided in.
     n_sided : {1, 2}
-        Determiens whether the `values` represent one- or two-sided distributions for PSD and ASD.
-         Note that thisdoes not affect `script_L` since it is precicely defined [1]. It will, 
-         however, affect the calculation of `script_L`. Defaults to one-sided.
+        Determiens whether the `values` represent one- or two-sided distributions for
+        PSD and ASD. Note that this does not affect `script_L` since it is precicely
+        defined [1]. It will, however, affect the calculation of `script_L`. Defaults to
+        one-sided.
     divide_by : int
-        If a prescaler was used provide the divide-by factor. The repsective oscillator noise will
-        be automatcially scalled accordingly to provide the noise of the original signal.
+        If a prescaler was used provide the divide-by factor. The repsective oscillator
+        noise will be automatcially scalled accordingly to provide the noise of the
+        original signal.
     label : str
         Optional label used for plotting.
 
@@ -181,44 +192,64 @@ class OscillatorNoise(FreqData):
 
     References
     ----------
-    [1] IEEE Standard Definitions of Physical Quantities for Fundamental Frequency and Time Metrology
-     — Random Instabilities (Vol. 2008). https://doi.org/10.1109/IEEESTD.2009.6581834
+    [1] IEEE Standard Definitions of Physical Quantities for Fundamental Frequency and
+    Time Metrology — Random Instabilities (Vol. 2008).
+    https://doi.org/10.1109/IEEESTD.2009.6581834
     """
-    def __init__(self, freqs, values, representation=None, n_sided=1, divide_by=1, label=''):
 
-        _allowed_representations = ['asd_freq', 'asd_phase', 'psd_freq', 'psd_phase', 'script_L']
+    def __init__(
+        self, freqs, values, representation=None, n_sided=1, divide_by=1, label=""
+    ):
 
-        super().__init__(freqs, values, label=label, 
-                        _allowed_representations=list(_allowed_representations),
-                        representation=representation)
+        _allowed_representations = [
+            "asd_freq",
+            "asd_phase",
+            "psd_freq",
+            "psd_phase",
+            "script_L",
+        ]
 
-        self._unit_dict = {'asd_freq'  : 'Hz/$\\sqrt{\\mathrm{Hz}}$',
-                           'asd_phase' : '$\\mathrm{rad}/\\sqrt{\\mathrm{Hz}}$',
-                           'psd_freq'  : 'Hz${}^2$/Hz',
-                           'psd_phase' : 'rad${}^2$/Hz',
-                           'script_L'  : 'dBc/Hz'}
-        
-        self._ylabel_dict = {'asd_freq' : '{}-sided ASD',
-                             'asd_phase' : '{}-sided ASD',
-                             'psd_freq'  : '{}-sided PSD',
-                             'psd_phase' : '{}-sided PSD',
-                             'script_L'  : 'L(f)'}
+        super().__init__(
+            freqs,
+            values,
+            label=label,
+            _allowed_representations=list(_allowed_representations),
+            representation=representation,
+        )
+
+        self._unit_dict = {
+            "asd_freq": "Hz/$\\sqrt{\\mathrm{Hz}}$",
+            "asd_phase": "$\\mathrm{rad}/\\sqrt{\\mathrm{Hz}}$",
+            "psd_freq": "Hz${}^2$/Hz",
+            "psd_phase": "rad${}^2$/Hz",
+            "script_L": "dBc/Hz",
+        }
+
+        self._ylabel_dict = {
+            "asd_freq": "{}-sided ASD",
+            "asd_phase": "{}-sided ASD",
+            "psd_freq": "{}-sided PSD",
+            "psd_phase": "{}-sided PSD",
+            "script_L": "L(f)",
+        }
 
         # setting _n_sided directly since setting n_sided will fail at this stage
         assert n_sided in [1, 2], "Sidedness has to be either 1 or 2"
         self._n_sided = n_sided
-        
-        if self.representation == 'script_L': # L(f) is represented on a logarithmic scale
-            values = values + 20*np.log10(divide_by)
+
+        if (
+            self.representation == "script_L"
+        ):  # L(f) is represented on a logarithmic scale
+            values = values + 20 * np.log10(divide_by)
         # all other representations are linear
-        elif self.representation[0:3] == 'asd':
+        elif self.representation[0:3] == "asd":
             values = values * divide_by
-        elif self.representation[0:3] == 'psd':
-            values = values * divide_by**2
+        elif self.representation[0:3] == "psd":
+            values = values * divide_by ** 2
 
-        # only one representation of the spectral density is set, rest is calculated when needed
-        setattr(self, '_'+self.representation, values)
-
+        # only one representation of the spectral density is set, rest is calculated
+        # when needed
+        setattr(self, "_" + self.representation, values)
 
     @property
     def ylabel(self):
@@ -234,49 +265,55 @@ class OscillatorNoise(FreqData):
     def representation(self):
         """The representation of `values`."""
         return self._representation
+
     @representation.setter
     def representation(self, representation):
-        assert representation in self._allowed_representations, \
-            'representation must be one of {}'.format(self._allowed_representations)
+        assert (
+            representation in self._allowed_representations
+        ), "representation must be one of {}".format(self._allowed_representations)
         self._representation = representation
 
     @property
     def n_sided(self):
-        """Either 1 or 2, depending on whether the spectral density is one or two-sided"""
+        """
+        Either 1 or 2, depending on whether the spectral density is one or two-sided.
+        """
         return self._n_sided
+
     @n_sided.setter
     def n_sided(self, new_n):
         assert new_n in [1, 2]
-        # resetting the psd_phase here is an arbitrary choice. Could have changed any other 
-        # representation. All other values will be recalculated from it.
-        if self._n_sided < new_n: # sidedness switches from 1 to 2
+        # resetting the psd_phase here is an arbitrary choice. Could have changed any
+        # other representation. All other values will be recalculated from it.
+        if self._n_sided < new_n:  # sidedness switches from 1 to 2
             new_psd_phase = self.psd_phase / 2
-        elif self._n_sided > new_n: # sidedness switches from 2 to 1
+        elif self._n_sided > new_n:  # sidedness switches from 2 to 1
             new_psd_phase = self.psd_phase * 2
         elif self.n_sided == new_n:
             new_psd_phase = self.psd_phase
-        self._force_recalculation() # delete all representations
-        self._psd_phase = new_psd_phase # set the rescaled psd, rest will be calculated
+        self._force_recalculation()  # delete all representations
+        self._psd_phase = new_psd_phase  # set the rescaled psd, rest will be calculated
         self._n_sided = new_n
-    
+
     @property
     def values(self):
         """
-        Array containing the values of the spectral density. Maps to one representation, depending
-        on `representation` attribute.
+        Array containing the values of the spectral density. Maps to one representation,
+        depending on `representation` attribute.
         """
         return getattr(self, self.representation)
+
     @values.setter
     def values(self, vals):
         self._force_recalculation()
-        setattr(self, '_'+self.representation, vals)
+        setattr(self, "_" + self.representation, vals)
 
     def _force_recalculation(self):
         # This function is called when `n_sided` is changed or the `values` or changed.
-        # check if `_allowed_representations` is already set. This is not the case during class
-        # instanciation, then nothing has to be recalculated.
-        if hasattr(self, '_allowed_representations'):
-            # remove data from representations because they have to be recalculated 
+        # check if `_allowed_representations` is already set. This is not the case
+        #  during class instanciation, then nothing has to be recalculated.
+        if hasattr(self, "_allowed_representations"):
+            # remove data from representations because they have to be recalculated
             for attr in self._allowed_representations:
                 try:
                     delattr(self, attr)
@@ -287,71 +324,76 @@ class OscillatorNoise(FreqData):
     @property
     def asd_freq(self):
         """Amplitude spectral density of the frequency noise."""
-        if not hasattr(self, '_asd_freq'):
-            assert 'asd_freq' in self._allowed_representations, \
-                'conversion to asd_freq not allowed'
+        if not hasattr(self, "_asd_freq"):
+            assert (
+                "asd_freq" in self._allowed_representations
+            ), "conversion to asd_freq not allowed"
             self._asd_freq = self.freqs * self.asd_phase
         return self._asd_freq
 
     @property
     def asd_phase(self):
         """Amplitude spectral density of the phase noise."""
-        if not hasattr(self, '_asd_phase'):
-            assert 'asd_phase' in self._allowed_representations, \
-                'conversion to asd_phase not allowed'
+        if not hasattr(self, "_asd_phase"):
+            assert (
+                "asd_phase" in self._allowed_representations
+            ), "conversion to asd_phase not allowed"
             self._asd_phase = np.sqrt(self.psd_phase)
         return self._asd_phase
 
     @property
     def psd_freq(self):
         """Power spectral density of the frequency noise."""
-        if not hasattr(self, '_psd_freq'):
-            assert 'psd_freq' in self._allowed_representations, \
-                'conversion to psd_freq not allowed'
-            self._psd_freq = self.asd_freq**2 
-        return self._psd_freq            
+        if not hasattr(self, "_psd_freq"):
+            assert (
+                "psd_freq" in self._allowed_representations
+            ), "conversion to psd_freq not allowed"
+            self._psd_freq = self.asd_freq ** 2
+        return self._psd_freq
 
     @property
     def psd_phase(self):
         """Power spectral density of the phase noise."""
-        if not hasattr(self, '_psd_phase'):
-            assert 'psd_phase' in self._allowed_representations, \
-                'conversion to psd_phase not allowed'
+        if not hasattr(self, "_psd_phase"):
+            assert (
+                "psd_phase" in self._allowed_representations
+            ), "conversion to psd_phase not allowed"
             # psd_phase can either be derived from psd_freq or script_L
             try:
                 # convert to linear scale, factor 1/10 in exponent because dBc are used
-                self._psd_phase = 10**(self.script_L / 10)
+                self._psd_phase = 10 ** (self.script_L / 10)
                 if self.n_sided == 1:
                     # one-sided distributions have a factor 2, see Table A1 in [1]
-                    self._psd_phase *= 2 
+                    self._psd_phase *= 2
             except RecursionError:
-                self._psd_phase = self.psd_freq / self.freqs**2
+                self._psd_phase = self.psd_freq / self.freqs ** 2
         return self._psd_phase
 
     @property
     def script_L(self):
         """The phase noise L(f) (pronounced "script ell of f") """
-        if not hasattr(self, '_script_L'):
-            assert 'script_L' in self._allowed_representations, \
-                'conversion to script_L not allowed'
+        if not hasattr(self, "_script_L"):
+            assert (
+                "script_L" in self._allowed_representations
+            ), "conversion to script_L not allowed"
             # see Table A.1 in [1] for the conversion from S_phi(f) and L(f)
-            L = self.psd_phase 
+            L = self.psd_phase
             if self.n_sided == 1:
-                L /=  2
-            L = 10 * np.log10(L) # convert to dBc/Hz
+                L /= 2
+            L = 10 * np.log10(L)  # convert to dBc/Hz
             self._script_L = L
         return self._script_L
 
     def accumulate(self):
         """
-        The accumulated phase noise calculated by integrating from the highest to lowest Fourier
-        frequency as in Fig. 3.17 of Christian Freier's PhD thesis [1].
+        The accumulated phase noise calculated by integrating from the highest to lowest
+        Fourier frequency as in Fig. 3.17 of Christian Freier's PhD thesis [1].
 
         Returns
         -------
         accum_noise : OscillatorNoise
-            Accumulated phase noise as described in [1]. Units are changed (no Hz in denominator
-            due to integration). 
+            Accumulated phase noise as described in [1]. Units are changed (no Hz in
+            denominator due to integration).
 
         Reference
         ---------
@@ -361,9 +403,14 @@ class OscillatorNoise(FreqData):
         for k in np.arange(len(self.values)):
             accum_noise.append(np.trapz(self.values[k:], x=self.freqs[k:]))
         accum_noise = np.sqrt(np.array(accum_noise))
-        accum_noise = OscillatorNoise(self.freqs, accum_noise, label=self.label, 
-            n_sided=self.n_sided, representation=self.representation)
-        
+        accum_noise = OscillatorNoise(
+            self.freqs,
+            accum_noise,
+            label=self.label,
+            n_sided=self.n_sided,
+            representation=self.representation,
+        )
+
         accum_noise._allowed_representations = list(self._allowed_representations)
         accum_noise._unit_dict = dict(self._unit_dict)
         accum_noise._ylabel_dict = dict(self._ylabel_dict)
@@ -372,22 +419,23 @@ class OscillatorNoise(FreqData):
             # remove /Hz from the unit, due to integration over frequncy axis
             accum_noise._unit_dict[key] = self._unit_dict[key][:-3]
             # add 'accumulated' to the label
-            accum_noise._ylabel_dict[key] = 'accumulated ' + self._ylabel_dict[key]
+            accum_noise._ylabel_dict[key] = "accumulated " + self._ylabel_dict[key]
 
         return accum_noise
 
-    def plot(self, ax=None, xscale='log', yscale='log', ylabel=''):
+    def plot(self, ax=None, xscale="log", yscale="log", ylabel=""):
 
         if not ylabel:
             # automatically create ylabel
-            ylabel = self.ylabel.format(self.n_sided) + ' / ' + self.unit
+            ylabel = self.ylabel.format(self.n_sided) + " / " + self.unit
 
-        if self.representation == 'script_L':
-            yscale = 'linear'
+        if self.representation == "script_L":
+            yscale = "linear"
         fig, ax = super().plot(ax=ax, xscale=xscale, yscale=yscale, ylabel=ylabel)
-        
-        ax.grid(True, which = 'both', ls = '-')
+
+        ax.grid(True, which="both", ls="-")
         return fig, ax
+
 
 class SpectrumAnalyzerData(FreqData):
     """
@@ -402,8 +450,9 @@ class SpectrumAnalyzerData(FreqData):
     rbw : float
         resolution bandwidth in Hz
     divide_by : int
-        If a prescaler was used provide the divide-by factor. The repsective oscillator noise will
-        be automatcially scalled accordingly to provide the noise of the original signal.
+        If a prescaler was used provide the divide-by factor. The repsective oscillator
+        noise will be automatcially scalled accordingly to provide the noise of the
+        original signal.
     label : str
         Optional label used for plotting.
 
@@ -420,22 +469,23 @@ class SpectrumAnalyzerData(FreqData):
         optional label used for plotting
     """
 
-    def __init__(self, freqs, values, rbw=1, divide_by=1, label=''):
+    def __init__(self, freqs, values, rbw=1, divide_by=1, label=""):
 
         super().__init__(freqs, values, rbw=rbw, label=label)
         self.values += 20 * np.log10(divide_by)
 
-    def to_oscillator_noise(self, sideband='right'):
+    def to_oscillator_noise(self, sideband="right"):
         """
-        Converts to spectrum to oscillator noise by determining the carrier signal amplitude and 
-        normalizing one of the sidebands to the carrier level, i.e. it is the "old" definition
+        Converts to spectrum to oscillator noise by determining the carrier signal
+        amplitude and normalizing one of the sidebands to the carrier level, i.e. it is
+        the "old" definition
         of L(f) [1].
 
         Parameters
         ----------
         sideband : {'left', 'right'}
-            Determiens whether the left or right sideband of the spectrum are used for calculating
-            the oscillator noise.
+            Determiens whether the left or right sideband of the spectrum are used for
+            calculating the oscillator noise.
 
         Returns
         -------
@@ -444,25 +494,25 @@ class SpectrumAnalyzerData(FreqData):
         # see Table A.1 in [1] for the conversion from S_phi(f) and L(f)
         peak_level = max(self.values)
 
-        center_freq =self.freqs[self.values == peak_level]
+        center_freq = self.freqs[self.values == peak_level]
 
-        if sideband == 'left':
+        if sideband == "left":
             selected_freqs = self.freqs < center_freq
-        elif sideband == 'right':
+        elif sideband == "right":
             selected_freqs = self.freqs > center_freq
 
         freqs = self.freqs[selected_freqs] - center_freq
         level = self.values[selected_freqs]
 
-        # convert from dBm to dBc / Hz, no factor 1/2 because we analyze the single-sideband or 
-        # two-sided spectral density
+        # convert from dBm to dBc / Hz, no factor 1/2 because we analyze the
+        # single-sideband or two-sided spectral density
         values = (level - peak_level) - 10 * np.log10(self.rbw)
 
         # divide_by already processed in __init__
-        spec_denisty = OscillatorNoise(freqs, values, representation='script_L', n_sided=1, 
-            label=self.label)
+        spec_denisty = OscillatorNoise(
+            freqs, values, representation="script_L", n_sided=1, label=self.label
+        )
         return spec_denisty
 
-
-    def plot(self, ax=None, xscale='log', yscale='linear', ylabel='level / dBm'):
+    def plot(self, ax=None, xscale="log", yscale="linear", ylabel="level / dBm"):
         return super().plot(ax=ax, xscale=xscale, yscale=yscale, ylabel=ylabel)

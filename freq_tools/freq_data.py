@@ -123,7 +123,6 @@ class FreqData:
         fig, ax : Figure and Axis
             The Figure and Axis handles of the plot that was used.
         """
-
         if ax is None:
             fig, ax = plt.subplots()
         else:
@@ -253,7 +252,7 @@ class OscillatorNoise(FreqData):
 
     @property
     def ylabel(self):
-        """y axis label used for plotting; doesn't contain the unit."""
+        """y axis label used for plotting; doesn't contain the unit."""  # noqa D403
         return self._ylabel_dict[self.representation]
 
     @property
@@ -277,7 +276,7 @@ class OscillatorNoise(FreqData):
     def n_sided(self):
         """
         Either 1 or 2, depending on whether the spectral density is one or two-sided.
-        """
+        """  # noqa: D200
         return self._n_sided
 
     @n_sided.setter
@@ -309,7 +308,7 @@ class OscillatorNoise(FreqData):
         setattr(self, "_" + self.representation, vals)
 
     def _force_recalculation(self):
-        # This function is called when `n_sided` is changed or the `values` or changed.
+        # This function is called when `n_sided` is changed or the `values` are changed.
         # check if `_allowed_representations` is already set. This is not the case
         #  during class instanciation, then nothing has to be recalculated.
         if hasattr(self, "_allowed_representations"):
@@ -371,7 +370,7 @@ class OscillatorNoise(FreqData):
 
     @property
     def script_L(self):
-        """The phase noise L(f) (pronounced "script ell of f") """
+        """The phase noise L(f) (pronounced "script ell of f")"""
         if not hasattr(self, "_script_L"):
             assert (
                 "script_L" in self._allowed_representations
@@ -476,7 +475,7 @@ class SpectrumAnalyzerData(FreqData):
 
     def to_oscillator_noise(self, sideband="right"):
         """
-        Converts to spectrum to oscillator noise by determining the carrier signal
+        Convert to spectrum to oscillator noise by determining the carrier signal
         amplitude and normalizing one of the sidebands to the carrier level, i.e. it is
         the "old" definition
         of L(f) [1].

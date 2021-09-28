@@ -2,6 +2,7 @@
 Submodule containing frequency-based models.
 """
 
+from freq_tools.freq_data import OscillatorNoise
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -266,6 +267,29 @@ class OscillatorNoiseModel(FreqModel):
             ax.set_yscale("log")
 
         return fig, ax
+
+    def to_oscillator_noise(self, freqs):
+        """
+        Convert the noise model to a `OscillatorNoise` object.
+
+        Parameters
+        ----------
+        freqs : 1d-array
+            The Fourier frequencies in Hz.
+
+        Returns
+        -------
+        oscillator_noise : OscillatorNoise
+            The model represented as an `OscillatorNoise` object.
+        """
+        oscillator_noise = OscillatorNoise(
+            freqs,
+            self.values(freqs),
+            representation=self.representation,
+            n_sided=self.n_sided,
+            divide_by=1,
+        )
+        return oscillator_noise
 
 
 class PowerLawNoise(OscillatorNoiseModel):

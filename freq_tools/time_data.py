@@ -56,15 +56,15 @@ class CounterData:
 
         Parameters
         ----------
-        method : {"welch"}, optional
+        method : {"welch", "lpsd"}, optional
             The method used for calculating the oscillator noise. Defaults to Welch
             method.
         window : str or tuple or array_like, optional
             Desired window to use. If `window` is a string or tuple, it is  passed to
-            `get_window` to generate the window values, which are DFT-even by default.
-            See `get_window` for a list of windows and  required parameters. If `window`
-             is array_like it will be used directly as the window and its length must be
-             nperseg. Defaults  to a Hann window.
+            `scipy.signal.get_window` to generate the window values, which are DFT-even
+            by default. See `scipy.signal.get_window` for a list of windows and required
+            parameters. If `window` is array_like it will be used directly as the window
+            and its length must be nperseg. Defaults  to a Hann window.
         nperseg : int, optional
             Length of each segment. Defaults to 1024.
         **kwargs :
@@ -76,8 +76,8 @@ class CounterData:
         OscillatorNoise
         """
 
-        assert method in ["welch"]
-        if welch:
+        assert method in ["welch", "lpsd"]
+        if method == "welch":
             f, Pxx = welch(
                 self.freqs,
                 self.sample_rate,
@@ -87,6 +87,8 @@ class CounterData:
                 scaling="density",
                 **kwargs
             )
+        elif method == "lpsd":
+            pass
         return OscillatorNoise(
             f, Pxx, representation="psd_freq", n_sided=1, divide_by=self.divide_by
         )

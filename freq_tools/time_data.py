@@ -68,7 +68,8 @@ class CounterData:
         nperseg : int, optional
             Length of each segment. Defaults to 1024.
         **kwargs :
-            Arguments will be passed to
+            Arguments will be passed to the function used for calculating the oscillator
+            noise.
 
         Returns
         -------

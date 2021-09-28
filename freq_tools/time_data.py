@@ -48,22 +48,44 @@ class CounterData:
         self.n_samples = len(self.freqs)
         self.sample_rate = int(self.n_samples / self.duration)
 
-    def to_oscillator_noise(self):
+    def to_oscillator_noise(
+        self, method="welch", window="hann", nperseg=1024, **kwargs
+    ):
         """
         Create a OscillatorNoise object using the Welch method.
+
+        Parameters
+        ----------
+        method : {"welch"}, optional
+            The method used for calculating the oscillator noise. Defaults to Welch
+            method.
+        window : str or tuple or array_like, optional
+            Desired window to use. If `window` is a string or tuple, it is  passed to
+            `get_window` to generate the window values, which are DFT-even by default.
+            See `get_window` for a list of windows and  required parameters. If `window`
+             is array_like it will be used directly as the window and its length must be
+             nperseg. Defaults  to a Hann window.
+        nperseg : int, optional
+            Length of each segment. Defaults to 1024.
+        **kwargs :
+            Arguments will be passed to
 
         Returns
         -------
         OscillatorNoise
         """
-        f, Pxx = welch(
-            self.freqs,
-            self.sample_rate,
-            ("kaiser", 100),
-            return_onesided=True,
-            nperseg=1024,
-            scaling="density",
-        )
+
+        assert method in ["welch"]
+        if welch:
+            f, Pxx = welch(
+                self.freqs,
+                self.sample_rate,
+                window=window,
+                nperseg=nperseg,
+                return_onesided=True,
+                scaling="density",
+                **kwargs
+            )
         return OscillatorNoise(
             f, Pxx, representation="psd_freq", n_sided=1, divide_by=self.divide_by
         )

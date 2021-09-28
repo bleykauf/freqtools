@@ -310,11 +310,20 @@ class PowerLawNoise(OscillatorNoiseModel):
         (http://rubiola.org/pdf-static/Enrico%27s-chart-EFTS.pdf)
     """
 
-    def __init__(self, coeff=1, exponent=0, base="phase", representation="psd_phase"):
+    def __init__(
+        self,
+        coeff=1,
+        exponent=0,
+        base="phase",
+        representation="psd_phase",
+        edge_freqs=None,
+    ):
 
         assert base in ["phase", "freq"]
         if base == "freq":
             # express everything in terms of psd_phase
+            if type(exponent) == list:
+                exponent = np.array(exponent)
             exponent = exponent - 2
         _label_dict = {
             -4: "random walk frequency",
@@ -323,16 +332,42 @@ class PowerLawNoise(OscillatorNoiseModel):
             -1: "flicker phase",
             0: "white phase",
         }
-
-        label = _label_dict[exponent]
+        try:
+            label = _label_dict[exponent] + " noise"
+        except (KeyError, TypeError):
+            label = "noise model"
         super().__init__(
             coeff=coeff, exponent=exponent, label=label, representation=representation
         )
+        if edge_freqs:
+            self.edge_freqs = list(edge_freqs)
+            self.edge_freqs.append(np.inf)
 
     def psd_phase(self, freqs):
         # Implement PSD of phase, all other representations can be calculated by virtue
         # of subclassing OscillatorNoiseModel.
-        return self.coeff * freqs ** self.exponent
+
+        # FIXME: Improve the cases
+        if type(self.coeff) == list:
+            previous_f_edge = 0
+            freqs = np.array(freqs)
+            values = []
+            for f_edge, coeff, exp in zip(self.edge_freqs, self.coeff, self.exponent):
+                idx = np.where(np.logical_and(freqs > previous_f_edge, freqs <= f_edge))
+                new_vals = coeff * freqs[idx] ** exp
+                values.append(new_vals)
+                previous_f_edge = f_edge
+
+            # flatten the list of lists
+            values = [item for sublist in values for item in sublist]
+
+            if len(values) < len(freqs):
+                # add the last value
+                values.append(coeff * freqs[-1] ** exp)
+            values = np.array(values)
+        else:
+            values = self.coeff * freqs ** self.exponent
+        return values
 
 
 class JohnsonNoise(OscillatorNoiseModel):

@@ -48,9 +48,7 @@ class CounterData:
         self.n_samples = len(self.freqs)
         self.sample_rate = int(self.n_samples / self.duration)
 
-    def to_oscillator_noise(
-        self, method="welch", window="hann", nperseg=1024, **kwargs
-    ):
+    def to_oscillator_noise(self, method="welch", window="hann", **kwargs):
         """
         Create a OscillatorNoise object using the Welch method.
 
@@ -65,11 +63,10 @@ class CounterData:
             by default. See `scipy.signal.get_window` for a list of windows and required
             parameters. If `window` is array_like it will be used directly as the window
             and its length must be nperseg. Defaults  to a Hann window.
-        nperseg : int, optional
-            Length of each segment. Defaults to 1024.
         **kwargs :
             Arguments will be passed to the function used for calculating the oscillator
-            noise.
+            noise. Note that `scaling` and `return_onesided` are always set
+            automatically for consistency.
 
         Returns
         -------

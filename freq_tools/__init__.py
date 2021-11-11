@@ -4,7 +4,7 @@ __version__ = get_versions()["version"]
 del get_versions
 
 
-from . import freq_data, freq_models, io, time_data, transfer_functions
+from . import freq_data, freq_models, time_data, transfer_functions
 from .freq_data import OscillatorNoise, SpectrumAnalyzerData
 from .freq_models import (
     BetaLine,

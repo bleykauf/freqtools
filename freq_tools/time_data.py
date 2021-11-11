@@ -265,8 +265,10 @@ def lpsd(
 
       [2] Michael Tröbs and Gerhard Heinzel, Corrigendum to "Improved spectrum
       estimation from digitized time series on a logarithmic frequency axis."
-
     """
+
+    # Based on https://github.com/rudolfbyker/lpsd
+    # FIXME: Replace with an import, once a package is available.
 
     assert scaling in ["density", "spectrum"]
 

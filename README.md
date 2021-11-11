@@ -115,7 +115,7 @@ This means, an linewidth of roughly 700 kHz at 1 ms (the default value for `line
 
 ### Spectrum analyzer data
 
-Here, we analyze the data of a phaselock between two MILAs ECDLs.
+Here, we analyze the data of a phaselock between two ECDLs.
 
 First, we have a look a beatnote measured with a spectrum analyzer
 
@@ -156,7 +156,7 @@ laser_noise.plot()
 ![png](docs/output_26_1.png)
 
 
-We now use the data from the spectrunm analyzer measurement from before and manually adjust the level (only God can judge us!). We only use the data beyond one Mhz.
+We now use the data from the spectrunm analyzer measurement from before and manually adjust the level. We only use the data beyond 1 Mhz.
 
 
 ```python
@@ -201,9 +201,7 @@ mz_tf = ft.MachZehnderTransferFunction(T=200e-3, tau=40e-6, convert_to_g=True)
 
 To calculate the atom interferometer noise, we first have to scale the phase noise with the squared magnitude of the transfer function and integrate over all frequencies of interest:
 
-\begin{equation}
-\sigma_{\text{AI}}^2 = \int_{f_0}^\infty |H_\text{AI}(2\pi f)|^2 \cdot S_\phi(f) \mathrm{d}f
-\end{equation}
+![equation](https://latex.codecogs.com/gif.latex?%5Csigma_%7B%5Ctext%7BAI%7D%7D%5E2%20%3D%20%5Cint_%7Bf_0%7D%5E%5Cinfty%20%7CH_%5Ctext%7BAI%7D%282%5Cpi%20f%29%7C%5E2%20%5Ccdot%20S_%5Cphi%28f%29%20%5Cmathrm%7Bd%7Df)
 
 We leave the lower integration bound $f_0$ as a free parameter in this equation and inegrate all phasenoies above this frequency, or conversly, up to a certain measurement time. $S_\phi$ here is the 1-sided PSD of phase. To conversion from $L(f)$ to $S_\phi$ is done automatically, as can be seen by looking at the `representation` argument of the scaled phase noise or the plot label. 
 

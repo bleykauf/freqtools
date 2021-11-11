@@ -1,7 +1,6 @@
-"""
-Submodule containing frequency-based models.
-"""
+"""Submodule containing frequency-based models."""
 
+from freq_tools.freq_data import OscillatorNoise
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -29,21 +28,23 @@ class FreqModel:
 
     def plot(self, freqs, ax=None, xscale="log", yscale="log", ylabel=""):
         """
+        Plot the model.
+
         Parameters
         ----------
         ax : Axis (optional)
             If axis is provided, they will be used for the plot. if not provided, a new
             plot will automatically be created.
-        xscale : {'log', 'linear'}
-            Scaling of the x axis
-        yscale : {'log', 'linear'}
-            Scaling for the y axis
+        xscale : {"log" or "linear"}
+            Scaling of the x axis.
+        yscale : {"log" or "linear"}
+            Scaling for the y axis.
         ylabel : str
-            the ylabel
+            Label for the y axis.
 
         Returns
         -------
-        fig, ax : Figure and Axis
+        fig, ax : Figure, Axis
             The Figure and Axis handles of the plot that was used.
         """
         if ax is None:
@@ -125,7 +126,7 @@ class OscillatorNoiseModel(FreqModel):
 
     @property
     def ylabel(self):
-        """y axis label used for plotting; doesn't contain the unit."""
+        """y axis label used for plotting; doesn't contain the unit."""  # noqa: D403
         return self._ylabel_dict[self.representation].format(self.n_sided)
 
     @property
@@ -254,6 +255,22 @@ class OscillatorNoiseModel(FreqModel):
         return L
 
     def plot(self, freqs, ax=None, xscale="log", yscale="log", ylabel=""):
+        """
+        Plot the spectral density model.
+
+        Parameters
+        ----------
+        freqs : list_like
+            Frequencies where the model is evaluated.
+        ax : matplotlib.axes.Axes (optional)
+            The axes to plot on. If not given, a new figure is created.
+        xscale : str {"log", "linear"} (optional)
+            The scale of the x-axis.
+        yscale : str {"log", "linear"} (optional)
+            The scale of the y-axis.
+        ylabel : str (optional)
+            The label of the y-axis.
+        """
 
         if not ylabel:
             # automatically create ylabel
@@ -266,6 +283,29 @@ class OscillatorNoiseModel(FreqModel):
             ax.set_yscale("log")
 
         return fig, ax
+
+    def to_oscillator_noise(self, freqs):
+        """
+        Convert the noise model to a `OscillatorNoise` object.
+
+        Parameters
+        ----------
+        freqs : 1d-array
+            The Fourier frequencies in Hz.
+
+        Returns
+        -------
+        oscillator_noise : OscillatorNoise
+            The model represented as an `OscillatorNoise` object.
+        """
+        oscillator_noise = OscillatorNoise(
+            freqs,
+            self.values(freqs),
+            representation=self.representation,
+            n_sided=self.n_sided,
+            divide_by=1,
+        )
+        return oscillator_noise
 
 
 class PowerLawNoise(OscillatorNoiseModel):
@@ -281,11 +321,17 @@ class PowerLawNoise(OscillatorNoiseModel):
 
     Parameters
     ----------
-    coeff : float
-        Coefficient b_i (for phase noise) or d_i (for frequency noise), cp. [1].
-    exponent : int
+    coeff : float or list of floats
+        Coefficient b_i (for phase noise) or d_i (for frequency noise), cp. [1]. Has to
+        b a list if `edge_freqs` is set.
+    exponent : int or list of ints
         The coefficient of the power  law noise. The noise type depends on the `base`
-        for a given exponent, cp. [1].
+        for a given exponent, cp. [1]. Has to be a list if `edge_freqs` is set.
+    edge_freqs : list of floats (optional)
+        Allows to construct composite models that have different noise types for
+        different frequency ranges. In this case, `coeff` and `exponent` have to be
+        lists of length `len(edge_freqs) + 1`. The edge frequencies are the frequencies
+        where the noise type changes.
 
         Allowed coefficients for phase noise:
             - -4 : random walk frequency
@@ -310,11 +356,20 @@ class PowerLawNoise(OscillatorNoiseModel):
         (http://rubiola.org/pdf-static/Enrico%27s-chart-EFTS.pdf)
     """
 
-    def __init__(self, coeff=1, exponent=0, base="phase", representation="psd_phase"):
+    def __init__(
+        self,
+        coeff=1,
+        exponent=0,
+        base="phase",
+        representation="psd_phase",
+        edge_freqs=None,
+    ):
 
         assert base in ["phase", "freq"]
         if base == "freq":
             # express everything in terms of psd_phase
+            if type(exponent) == list:
+                exponent = np.array(exponent)
             exponent = exponent - 2
         _label_dict = {
             -4: "random walk frequency",
@@ -323,16 +378,55 @@ class PowerLawNoise(OscillatorNoiseModel):
             -1: "flicker phase",
             0: "white phase",
         }
-
-        label = _label_dict[exponent]
+        try:
+            label = _label_dict[exponent] + " noise"
+        except (KeyError, TypeError):
+            label = "noise model"
         super().__init__(
             coeff=coeff, exponent=exponent, label=label, representation=representation
         )
+        if edge_freqs:
+            self.edge_freqs = list(edge_freqs)
+            self.edge_freqs.append(np.inf)
 
     def psd_phase(self, freqs):
+        """
+        Power spectral density of the phase noise.
+
+        Parameters
+        ----------
+        freqs : list_like
+            Frequencies where the model is evaluated.
+
+        Returns
+        -------
+        1darray :
+            The power spectral density of the phase noise.
+        """
         # Implement PSD of phase, all other representations can be calculated by virtue
         # of subclassing OscillatorNoiseModel.
-        return self.coeff * freqs ** self.exponent
+
+        # FIXME: Improve the cases
+        if type(self.coeff) == list:
+            previous_f_edge = 0
+            freqs = np.array(freqs)
+            values = []
+            for f_edge, coeff, exp in zip(self.edge_freqs, self.coeff, self.exponent):
+                idx = np.where(np.logical_and(freqs > previous_f_edge, freqs <= f_edge))
+                new_vals = coeff * freqs[idx] ** exp
+                values.append(new_vals)
+                previous_f_edge = f_edge
+
+            # flatten the list of lists
+            values = [item for sublist in values for item in sublist]
+
+            if len(values) < len(freqs):
+                # add the last value
+                values.append(coeff * freqs[-1] ** exp)
+            values = np.array(values)
+        else:
+            values = self.coeff * freqs ** self.exponent
+        return values
 
 
 class JohnsonNoise(OscillatorNoiseModel):
@@ -368,6 +462,20 @@ class JohnsonNoise(OscillatorNoiseModel):
         self.signal_power = signal_power
 
     def script_L(self, freqs):
+        """
+        Calculate the script_L representation of the Johnson noise.
+
+        Parameters
+        ----------
+        freqs : list_like
+            Frequencies where the model is evaluated.
+
+        Returns
+        -------
+        1darray :
+            The script_L representation of the Johnson noise.
+        """
+
         # Implement L(f), all other representations can be calculated by virtue of
         # subclassing OscillatorNoiseModel.
         kb = 1.380649e-23  # Boltzmann constant in J/K
@@ -417,6 +525,20 @@ class PhotonShotNoise(OscillatorNoiseModel):
         self.signal_power = signal_power
 
     def script_L(self, freqs):
+        """
+        Calculate the script_L representation of the Johnson noise.
+
+        Parameters
+        ----------
+        freqs : list_like
+            Frequencies where the model is evaluated.
+
+        Returns
+        -------
+        1darray :
+            The script_L representation of the photon shot noise.
+        """
+
         e = 1.6e-19  # electron charge in C
         freqs = np.ones(len(freqs))
         noise = (
@@ -474,6 +596,19 @@ class NoiseFloor(OscillatorNoiseModel):
         self.noise_floor = noise_floor
 
     def script_L(self, freqs):
+        """
+        Calculate the script_L representation of the noise floor.
+
+        Parameters
+        ----------
+        freqs : list_like
+            Frequencies where the model is evaluated.
+
+        Returns
+        -------
+        1darray :
+            The script_L representation of the noise floor.
+        """
         freqs = np.ones(len(freqs))
         noise = (
             freqs * self.noise_floor + 20 * np.log10(self.divide_by) - self.signal_power

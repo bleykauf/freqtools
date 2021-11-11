@@ -423,6 +423,20 @@ class OscillatorNoise(FreqData):
         return accum_noise
 
     def plot(self, ax=None, xscale="log", yscale="log", ylabel=""):
+        """
+        Plot the spectral density of the noise.
+
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes (optional)
+            Axis to plot on. If not given, a new figure is created.
+        xscale : str {"log", "linear"} (optional)
+            Scale of the x-axis.
+        yscale : str {"log", "linear"} (optional)
+            Scale of the y-axis.
+        ylabel : str (optional)
+            Label of the y-axis.
+        """
 
         if not ylabel:
             # automatically create ylabel
@@ -514,4 +528,18 @@ class SpectrumAnalyzerData(FreqData):
         return spec_denisty
 
     def plot(self, ax=None, xscale="log", yscale="linear", ylabel="level / dBm"):
+        """
+        Plot the spectrum analyzer data.
+
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes (optional)
+            Axis to plot on. If not given, a new figure is created.
+        xscale : str {"log", "linear"} (optional)
+            Scale of the x-axis.
+        yscale : str {"log", "linear"} (optional)
+            Scale of the y-axis.
+        ylabel : str (optional)
+            Label of the y-axis (default: "level / dBm")
+        """
         return super().plot(ax=ax, xscale=xscale, yscale=yscale, ylabel=ylabel)

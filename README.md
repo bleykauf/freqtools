@@ -3,12 +3,12 @@
 ## Installation
 
 ```
-git clone https://git.physik.hu-berlin.de/pylab/freq_tools.git
-cd freq_tools
+git clone https://git.physik.hu-berlin.de/pylab/freqtools.git
+cd freqtools
 pip install -e .
 ```
 
-The option `-e` installs `freq_tools` in editable mode, i.e. changes made to the files
+The option `-e` installs `freqtools` in editable mode, i.e. changes made to the files
 will automatically be applied.
 
 ## Features
@@ -28,7 +28,7 @@ The other features are shown in the Example section below.
 import numpy as np
 import matplotlib.pyplot as plt
 
-import freq_tools as ft
+import freqtools as ft
 ```
 
 To get more information about the provided classes and functions use `?`, e.g.

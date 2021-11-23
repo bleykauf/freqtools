@@ -183,7 +183,7 @@ class TransferFunctionModel:
             fig, ax = plt.subplots()
         else:
             fig = ax.figure
-        ax.plot(freqs, self.phase(freqs))
+        ax.plot(freqs, self.magnitude(freqs))
         ax.set_xscale = xscale
         ax.set_yscale = yscale
         ax.set_ylabel = ylabel

@@ -454,7 +454,7 @@ class SpectrumAnalyzerData(FreqData):
         the level at `freqs` in dBm
     rbw : float
         resolution bandwidth in Hz
-    divide_by : int
+    divide_by : int (optional)
         If a prescaler was used provide the divide-by factor. The repsective oscillator
         noise will be automatcially scalled accordingly to provide the noise of the
         original signal.
@@ -468,13 +468,13 @@ class SpectrumAnalyzerData(FreqData):
     values : 1darray
         signal level in dBm
     rbw : 1darray
-        resolution bandwidth in Hz, used for conversion to Oscillator_noise, c.p. method
+        resolution bandwidth in Hz, used for conversion to OscillatorNoise, cp. method
         `to_oscillator_noise`
     label : str
         optional label used for plotting
     """
 
-    def __init__(self, freqs, values, rbw=1, divide_by=1, label=""):
+    def __init__(self, freqs, values, rbw, divide_by=1, label=""):
 
         super().__init__(freqs, values, rbw=rbw, label=label)
         self.values += 20 * np.log10(divide_by)

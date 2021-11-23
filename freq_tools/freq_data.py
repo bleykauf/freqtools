@@ -6,12 +6,14 @@ References
 [1] Riehle, F. (2006). Frequency Standards: Basics and Applications.
     Weinheim: Wiley-VCH. https://doi.org/10.1109/2944.902135
 [2] IEEE Standard Definitions of Physical Quantities for Fundamental Frequency and Time
-     Metrology — Random Instabilities (Vol. 2008).
-     https://doi.org/10.1109/IEEESTD.2009.6581834
+    Metrology — Random Instabilities (Vol. 2008).
+    https://doi.org/10.1109/IEEESTD.2009.6581834
 [3] Walls, F. L. (2001). Phase noise issues in femtosecond lasers. Laser Frequency
     Stabilization,
     Standards, Measurement, and Applications, 4269, 170.
     https://doi.org/10.1117/12.424466
+[4] C. Freier (2017). Atom Interferometry at Geodetic Observatories,
+    PhD Thesis, http://dx.doi.org/10.18452/17795
 """
 
 import copy
@@ -166,7 +168,7 @@ class OscillatorNoise(FreqData):
     n_sided : {1, 2}
         Determiens whether the `values` represent one- or two-sided distributions for
         PSD and ASD. Note that this does not affect `script_L` since it is precicely
-        defined [1]. It will, however, affect the calculation of `script_L`. Defaults to
+        defined [2]. It will, however, affect the calculation of `script_L`. Defaults to
         one-sided.
     divide_by : int
         If a prescaler was used provide the divide-by factor. The repsective oscillator
@@ -188,12 +190,6 @@ class OscillatorNoise(FreqData):
     psd_freq
     script_L
     unit
-
-    References
-    ----------
-    [1] IEEE Standard Definitions of Physical Quantities for Fundamental Frequency and
-    Time Metrology — Random Instabilities (Vol. 2008).
-    https://doi.org/10.1109/IEEESTD.2009.6581834
     """
 
     def __init__(
@@ -362,7 +358,7 @@ class OscillatorNoise(FreqData):
                 # convert to linear scale, factor 1/10 in exponent because dBc are used
                 self._psd_phase = 10 ** (self.script_L / 10)
                 if self.n_sided == 1:
-                    # one-sided distributions have a factor 2, see Table A1 in [1]
+                    # one-sided distributions have a factor 2, see Table A1 in [2]
                     self._psd_phase *= 2
             except RecursionError:
                 self._psd_phase = self.psd_freq / self.freqs ** 2
@@ -375,7 +371,7 @@ class OscillatorNoise(FreqData):
             assert (
                 "script_L" in self._allowed_representations
             ), "conversion to script_L not allowed"
-            # see Table A.1 in [1] for the conversion from S_phi(f) and L(f)
+            # see Table A.1 in [2] for the conversion from S_phi(f) and L(f)
             L = self.psd_phase
             if self.n_sided == 1:
                 L /= 2
@@ -386,17 +382,13 @@ class OscillatorNoise(FreqData):
     def accumulate(self):
         """
         The accumulated phase noise calculated by integrating from the highest to lowest
-        Fourier frequency as in Fig. 3.17 of Christian Freier's PhD thesis [1].
+        Fourier frequency as in Fig. 3.17 of [4].
 
         Returns
         -------
         accum_noise : OscillatorNoise
-            Accumulated phase noise as described in [1]. Units are changed (no Hz in
+            Accumulated phase noise as described in [4]. Units are changed (no Hz in
             denominator due to integration).
-
-        Reference
-        ---------
-        [1] C. Freier - Atom Interferometry at Geodetic Observatories (2017), PhD Thesis
         """
         accum_noise = []
         for k in np.arange(len(self.values)):
@@ -491,8 +483,7 @@ class SpectrumAnalyzerData(FreqData):
         """
         Convert to spectrum to oscillator noise by determining the carrier signal
         amplitude and normalizing one of the sidebands to the carrier level, i.e. it is
-        the "old" definition
-        of L(f) [1].
+        the "old" definition of L(f) [2].
 
         Parameters
         ----------
@@ -504,7 +495,7 @@ class SpectrumAnalyzerData(FreqData):
         -------
         OscillatorNoise
         """
-        # see Table A.1 in [1] for the conversion from S_phi(f) and L(f)
+        # see Table A.1 in [2] for the conversion from S_phi(f) and L(f)
         peak_level = max(self.values)
 
         center_freq = self.freqs[self.values == peak_level]

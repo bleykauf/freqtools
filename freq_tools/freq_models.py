@@ -1,6 +1,6 @@
 """Submodule containing frequency-based models."""
 
-from freq_tools.freq_data import OscillatorNoise
+from freqtools.freq_data import OscillatorNoise
 import numpy as np
 import matplotlib.pyplot as plt
 

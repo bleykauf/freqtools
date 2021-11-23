@@ -1,4 +1,4 @@
 include versioneer.py
-include freq_tools/_version.py
+include freqtools/_version.py
 include README.md
 include LICENSE

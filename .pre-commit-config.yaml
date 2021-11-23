@@ -8,5 +8,5 @@ repos:
           (?x)^(
               versioneer.py|
               docs/conf.py|
-              freq_tools/_version.py
+              freqtools/_version.py
           )$

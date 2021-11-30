@@ -19,14 +19,6 @@ The main feature are simple conversion between power and amplitude spectral dens
 
 The other features are shown in the Example section below.
 
-
-## Installation
-
-```
-git clone https://github.com/bleykauf/freqtools.git
-cd freqtools
-pip install .
-```
 ## Examples
 
 An example notebook can be found [here](examples/Examples.ipynb).

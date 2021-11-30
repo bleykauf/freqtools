@@ -513,10 +513,10 @@ class SpectrumAnalyzerData(FreqData):
         values = (level - peak_level) - 10 * np.log10(self.rbw)
 
         # divide_by already processed in __init__
-        spec_denisty = OscillatorNoise(
+        spec_density = OscillatorNoise(
             freqs, values, representation="script_L", n_sided=1, label=self.label
         )
-        return spec_denisty
+        return spec_density
 
     def plot(self, ax=None, xscale="log", yscale="linear", ylabel="level / dBm"):
         """

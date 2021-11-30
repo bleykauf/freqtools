@@ -13,6 +13,7 @@ from .freq_models import (
     NoiseFloor,
     PhotonShotNoise,
     PowerLawNoise,
+    AtomShotNoise,
 )
 from .time_data import CounterData
 from .transfer_functions import MachZehnderTransferFunction, TransferFunction

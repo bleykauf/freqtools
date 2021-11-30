@@ -26,6 +26,9 @@ class FreqModel:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def values(self, freqs):
+        raise NotImplementedError("Subclasses have to implement this method.")
+
     def plot(self, freqs, ax=None, xscale="log", yscale="log", ylabel=""):
         """
         Plot the model.
@@ -706,3 +709,29 @@ class BetaLine(OscillatorNoiseModel):
         area = np.trapz(psd_vals_over_line, x=freqs)
         fwhm = np.sqrt(8 * np.log(2) * area)  # equation (9) in [1]
         return fwhm
+
+
+class AtomShotNoise(FreqModel):
+    """
+    Atomic shot noise of an atom interferometer gravimeter.
+
+    Parameters
+    ----------
+    n_atoms : float
+        Number of atoms.
+    contrast : float
+        Peak-to-peak contrast of the fringe.
+    T : float
+        Interferometer time in seconds.
+    keff : float
+        Effective wavevector of the atom interferometer in 1/m.
+    """
+
+    def __init__(self, n_atoms, contrast, T, keff, **kwargs):
+        super().__init__(n_atoms=n_atoms, contrast=contrast, T=-T, keff=keff, **kwargs)
+
+    def values(self, freqs):
+        """Shot noise limit in m/s²."""
+        sigma_p = 1 / np.sqrt(self.n_atoms)  # atomic shot noise
+        sigma_g = 2 * sigma_p / (self.contrast * self.keff * self.T ** 2)  # in m/s**2
+        return sigma_g

@@ -348,7 +348,8 @@ class PowerLawNoise(OscillatorNoiseModel):
             -  2 : white phase
 
     base : {'phase', 'freq'}:
-        determines whether the exponent and coefficient is given in terms of
+        determines whether the exponent and coefficient is given in terms of phase or
+        frequency.
 
     References
     ----------

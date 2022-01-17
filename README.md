@@ -3,7 +3,7 @@
 ## Installation
 
 ```
-git clone https://git.physik.hu-berlin.de/pylab/freqtools.git
+git clone https://github.com/bleykauf/freqtools
 cd freqtools
 pip install -e .
 ```

@@ -389,9 +389,9 @@ class MachZehnderTransferFunction(TransferFunctionModel):
         freqs = np.concatenate([f1, f2])
         tf = np.concatenate([tf1, tf2])
         ax.loglog(freqs, tf)
-        ax.set_xscale = xscale
-        ax.set_yscale = yscale
-        ax.set_ylabel = ylabel
+        ax.set_xscale(xscale)
+        ax.set_yscale(yscale)
+        ax.set_ylabel(ylabel)
         ax.set_xlabel("Frequency / Hz")
         return fig, ax
 

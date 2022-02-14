@@ -2,8 +2,11 @@
 Submodule containing transfer fuction models and classes for transfer function data.
 """
 
+import copy
+
 import matplotlib.pyplot as plt
 import numpy as np
+
 from .freq_data import OscillatorNoise
 
 
@@ -300,7 +303,7 @@ class MachZehnderTransferFunction(TransferFunctionModel):
             H_ai = H_ai / (self.k_eff * self.T ** 2)
         return H_ai
 
-    def scale_noise(self, noise):
+    def scale_noise(self, noise, drop_nan=False):
         """
         Scales phase noise with the squared magnitude of transfer function as in Eq. (7)
          of [1].
@@ -308,6 +311,8 @@ class MachZehnderTransferFunction(TransferFunctionModel):
         Parameters
         ----------
         noise : PhaseNoise
+        drop_nan : bool (optional)
+            If True, NaN values are removed from the scaled noise (default False).
 
         Returns
         -------
@@ -320,8 +325,17 @@ class MachZehnderTransferFunction(TransferFunctionModel):
         """
         assert noise.n_sided == 1, "the 1-sided spectral density should be used"
         psd_phase_scaled = self.magnitude(noise.freqs) ** 2 * noise.psd_phase
+        # copy because arrays are mutable
+        freqs = copy.copy(noise.freqs)
+
+        if drop_nan:
+            nan_idx = np.isnan(psd_phase_scaled)
+            freqs = freqs[~nan_idx]
+            psd_phase_scaled = psd_phase_scaled[~nan_idx]
+            print(f"Dropped {sum(nan_idx)} NaN values.")
+
         scaled_noise = OscillatorNoise(
-            noise.freqs,
+            freqs,
             psd_phase_scaled,
             label=noise.label,
             representation="psd_phase",

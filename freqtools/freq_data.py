@@ -240,7 +240,7 @@ class OscillatorNoise(FreqData):
         elif self.representation[0:3] == "asd":
             values = values * divide_by
         elif self.representation[0:3] == "psd":
-            values = values * divide_by ** 2
+            values = values * divide_by**2
 
         # only one representation of the spectral density is set, rest is calculated
         # when needed
@@ -343,7 +343,7 @@ class OscillatorNoise(FreqData):
             assert (
                 "psd_freq" in self._allowed_representations
             ), "conversion to psd_freq not allowed"
-            self._psd_freq = self.asd_freq ** 2
+            self._psd_freq = self.asd_freq**2
         return self._psd_freq
 
     @property
@@ -361,7 +361,7 @@ class OscillatorNoise(FreqData):
                     # one-sided distributions have a factor 2, see Table A1 in [2]
                     self._psd_phase *= 2
             except RecursionError:
-                self._psd_phase = self.psd_freq / self.freqs ** 2
+                self._psd_phase = self.psd_freq / self.freqs**2
         return self._psd_phase
 
     @property

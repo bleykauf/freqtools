@@ -429,7 +429,7 @@ class PowerLawNoise(OscillatorNoiseModel):
                 values.append(coeff * freqs[-1] ** exp)
             values = np.array(values)
         else:
-            values = self.coeff * freqs ** self.exponent
+            values = self.coeff * freqs**self.exponent
         return values
 
 
@@ -653,7 +653,7 @@ class BetaLine(OscillatorNoiseModel):
         1d array :
             The values of the beta separation line.
         """
-        return 8 * np.log(2) * np.array(freqs) / np.pi ** 2
+        return 8 * np.log(2) * np.array(freqs) / np.pi**2
 
     def intersection(self, density, which="first"):
         """
@@ -733,5 +733,5 @@ class AtomShotNoise(FreqModel):
     def values(self, freqs):
         """Shot noise limit in m/s²."""
         sigma_p = 1 / np.sqrt(self.n_atoms)  # atomic shot noise
-        sigma_g = 2 * sigma_p / (self.contrast * self.keff * self.T ** 2)  # in m/s**2
+        sigma_g = 2 * sigma_p / (self.contrast * self.keff * self.T**2)  # in m/s**2
         return sigma_g

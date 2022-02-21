@@ -292,7 +292,7 @@ class MachZehnderTransferFunction(TransferFunctionModel):
         omega = 2 * np.pi * freqs
         H_ai = (
             (4j * omega * self.Omega_r)
-            / (omega ** 2 - self.Omega_r ** 2)
+            / (omega**2 - self.Omega_r**2)
             * np.sin(omega * (self.T + 2 * self.tau) / 2)
             * (
                 np.cos(omega * (self.T + 2 * self.tau) / 2)
@@ -300,7 +300,7 @@ class MachZehnderTransferFunction(TransferFunctionModel):
             )
         )
         if self.convert_to_g:
-            H_ai = H_ai / (self.k_eff * self.T ** 2)
+            H_ai = H_ai / (self.k_eff * self.T**2)
         return H_ai
 
     def scale_noise(self, noise, drop_nan=False):

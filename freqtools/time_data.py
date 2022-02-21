@@ -348,11 +348,11 @@ def lpsd(
         # Calculate some properties of the window function which will be used during
         # calibration
         S1[jj] = np.sum(w)  # (23)
-        S2[jj] = np.sum(w ** 2)  # (24)
+        S2[jj] = np.sum(w**2)  # (24)
 
         # Calibration of spectral estimates
     if scaling == "spectrum":
-        C = 2.0 / (S1 ** 2)  # (28)
+        C = 2.0 / (S1**2)  # (28)
         Pxx = Pxx * C
     elif scaling == "density":
         C = 2.0 / (fs * S2)  # (29)

@@ -17,8 +17,9 @@ References
 """
 
 import copy
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.interpolate import interp1d
 
 
@@ -537,3 +538,20 @@ def calc_rms_noise(noise):
         rms_noise._ylabel_dict[key] = "integrated " + noise._ylabel_dict[key]
 
     return rms_noise
+
+
+def interp(freqs, freqsp, valuesp):
+    """
+    One-dimensional linear interpolation for monotonically increasing sample points on a
+    logarithmic x scale.
+
+    Parameters
+    ----------
+    freqs : array_like
+        The x-coordinates at which to evaluate the interpolated values.
+    freqsp : 1-D sequence of floats
+        The x-coordinates of the data points.
+    valuesp : 1-D sequence of float or complex
+        The y-coordinates of the data points, same length as `freqsp`.
+    """
+    return np.interp(np.log10(freqs), np.log10(freqsp), valuesp)
